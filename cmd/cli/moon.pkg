@@ -1,8 +1,0 @@
-import {
-  "vicTop-cw/mcpconftest/src/lib",
-  "moonbitlang/core/env",
-}
-
-pkgtype(kind: "executable")
-
-supported_targets = "js+native"

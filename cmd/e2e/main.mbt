@@ -115,6 +115,7 @@ async fn main {
   let args = @env.args()
   var server_cmd = ""
   var report_dir = "./mcpconftest-report"
+  var junit = false
   var i = 2
   while i < args.length() {
     if args[i] == "--server" && i + 1 < args.length() {
@@ -123,6 +124,8 @@ async fn main {
     } else if args[i] == "--report" && i + 1 < args.length() {
       report_dir = args[i + 1]
       i += 1
+    } else if args[i] == "--junit" {
+      junit = true
     }
     i += 1
   }
@@ -137,7 +140,7 @@ async fn main {
   // Report write (observation surface, not verdict surface — warn only)
   if report_dir.length() > 0 {
     let report = @lib.build_report(run.results, run.cmd, "2026-07-28", js_now_iso())
-    match report.write_to_dir(report_dir) {
+    match report.write_to_dir(report_dir, junit) {
       Ok(_) => println("report written: \{report_dir}/report.{json,md}")
       Err(e) => println("WARN: report write failed: \{e}")
     }

@@ -1,6 +1,6 @@
 ///| Demo / dev entry point.
 
 fn main {
-  println("mcpconftest v0.1.0")
-  println("Run with: moon run cmd/cli/main -- run --server \"<mcp-server-cmd>\"")
+  println("mcpconftest v0.4.0")
+  println("Run with: moon run cmd/e2e -- --server \"<mcp-server-cmd>\" [--report <dir>] [--junit]")
 }

@@ -17,12 +17,15 @@
 
 Output: JSON report + optional Markdown summary + CI gate (exit code 0 = pass, 1 = any fail).
 
-## Reports (v0.3)
+## Reports (v0.4)
 
-Every run writes `report.json` (machine-readable CI artifact, full per-check results
-with summary counts) and `report.md` (human-readable summary table + details) to the
-report directory. Report writing is an observation surface — it never changes the
-exit verdict.
+Every run writes to the report directory:
+- `report.json` — machine-readable CI artifact (per-check results + summary counts)
+- `report.md` — human-readable summary table + details
+- `report.html` — standalone styled page (collapsible per-check details)
+- `report-junit.xml` — JUnit XML, only with `--junit` (CI-native test results)
+
+Report writing is an observation surface — it never changes the exit verdict.
 
 ## Quick start
 
