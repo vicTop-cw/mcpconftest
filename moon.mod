@@ -1,5 +1,5 @@
 name = "vicTop-cw/mcpconftest"
-version = "0.4.0"
+version = "0.5.0"
 readme = "README.md"
 repository = "https://github.com/VictorTop/mcpconftest"
 license = "Apache-2.0"

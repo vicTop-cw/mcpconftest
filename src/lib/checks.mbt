@@ -149,7 +149,14 @@ pub async fn check_tools_call(session : Session) -> Array[CheckResult] {
       match j.value("error") {
         Some(Json::Object(e)) => {
           match e.get("code") {
-            Some(Json::Number(n, ..)) => results.push(CheckResult::pass("tools_call.error", "non-existent tool returned error code \{n.to_int()}"))
+            Some(Json::Number(n, ..)) => {
+              let code = n.to_int()
+              if code == -32601 {
+                results.push(CheckResult::pass("tools_call.error", "non-existent tool returned correct error code -32601"))
+              } else {
+                results.push(CheckResult::fail("tools_call.error_code", "expected -32601, got \{code} (wrong error code for unknown tool)", resp_str))
+              }
+            }
             _ => results.push(CheckResult::fail("tools_call.error_code", "error object missing code", resp_str))
           }
         }
@@ -196,6 +203,229 @@ pub async fn check_idempotency(session : Session) -> Array[CheckResult] {
       }
     }
     Err(e) => results.push(CheckResult::fail("idempotency.first", "first call failed: \{e}", ""))
+  }
+  results
+}
+
+///| resources/list schema check (skip when server lacks the capability).
+pub async fn check_resources_list(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("resources/list", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch {
+        _ => {
+          results.push(CheckResult::fail("resources_list.parse", "JSON parse error", resp_str))
+          return results
+        }
+      }
+      match j.value("result") {
+        Some(Json::Object(r)) =>
+          match r.get("resources") {
+            Some(Json::Array(resources)) => {
+              if resources.length() == 0 {
+                results.push(CheckResult::pass("resources_list.empty_ok", "resources array empty (valid)"))
+              } else {
+                for res in resources {
+                  match res {
+                    Json::Object(res_obj) => {
+                      match res_obj.get("uri") {
+                        Some(Json::String(_)) => results.push(CheckResult::pass("resources_list.uri", "resource has uri"))
+                        _ => results.push(CheckResult::fail("resources_list.uri", "resource missing uri", res.stringify()))
+                      }
+                      match res_obj.get("name") {
+                        Some(_) => results.push(CheckResult::pass("resources_list.name", "resource has name"))
+                        _ => results.push(CheckResult::fail("resources_list.name", "resource missing name", res.stringify()))
+                      }
+                    }
+                    _ => results.push(CheckResult::fail("resources_list.item", "resource is not object", res.stringify()))
+                  }
+                }
+              }
+            }
+            _ => results.push(CheckResult::skip("resources_list.result", "resources array missing (server may not support resources)"))
+          }
+        _ => results.push(CheckResult::skip("resources_list.unsupported", "no result (server may not support resources)"))
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("resources_list.unreachable", e))
+  }
+  results
+}
+
+///| prompts/list schema check (skip when server lacks the capability).
+pub async fn check_prompts_list(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("prompts/list", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch {
+        _ => {
+          results.push(CheckResult::fail("prompts_list.parse", "JSON parse error", resp_str))
+          return results
+        }
+      }
+      match j.value("result") {
+        Some(Json::Object(r)) =>
+          match r.get("prompts") {
+            Some(Json::Array(prompts)) => {
+              if prompts.length() == 0 {
+                results.push(CheckResult::pass("prompts_list.empty_ok", "prompts array empty (valid)"))
+              } else {
+                for p in prompts {
+                  match p {
+                    Json::Object(p_obj) => {
+                      match p_obj.get("name") {
+                        Some(_) => results.push(CheckResult::pass("prompts_list.name", "prompt has name"))
+                        _ => results.push(CheckResult::fail("prompts_list.name", "prompt missing name", p.stringify()))
+                      }
+                    }
+                    _ => results.push(CheckResult::fail("prompts_list.item", "prompt is not object", p.stringify()))
+                  }
+                }
+              }
+            }
+            _ => results.push(CheckResult::skip("prompts_list.result", "prompts array missing (server may not support prompts)"))
+          }
+        _ => results.push(CheckResult::skip("prompts_list.unsupported", "no result (server may not support prompts)"))
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("prompts_list.unreachable", e))
+  }
+  results
+}
+
+///| resources/read error path: non-existent resource must return a JSON-RPC error.
+pub async fn check_resources_read_error(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("resources/read", Json::object({ "uri": Json::string("file:///__mcpconftest_nonexistent__") }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch {
+        _ => {
+          results.push(CheckResult::fail("resources_read.parse", "JSON parse error", resp_str))
+          return results
+        }
+      }
+      match j.value("error") {
+        Some(Json::Object(e)) =>
+          match e.get("code") {
+            Some(Json::Number(_, ..)) => results.push(CheckResult::pass("resources_read.error", "non-existent resource returned error"))
+            _ => results.push(CheckResult::fail("resources_read.error_code", "error object missing code", resp_str))
+          }
+        // isError-inside-result is also acceptable per spec
+        Some(_) => results.push(CheckResult::pass("resources_read.error", "non-existent resource returned error"))
+        _ => results.push(CheckResult::fail("resources_read.no_error", "expected error for non-existent resource", resp_str))
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("resources_read.unreachable", e))
+  }
+  results
+}
+
+///| ping check: server must respond to ping (empty result per spec).
+pub async fn check_ping(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("ping", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch {
+        _ => {
+          results.push(CheckResult::fail("ping.parse", "JSON parse error", resp_str))
+          return results
+        }
+      }
+      match j.value("result") {
+        Some(_) => results.push(CheckResult::pass("ping.responds", "ping answered with result"))
+        _ =>
+          match j.value("error") {
+            Some(Json::Object(e)) =>
+              match e.get("code") {
+                Some(Json::Number(-32601, ..)) =>
+                  results.push(CheckResult::fail("ping.responds", "ping returned -32601 (spec: server MUST respond to ping)", resp_str))
+                Some(_) => results.push(CheckResult::fail("ping.responds", "ping returned unexpected error", resp_str))
+                _ => results.push(CheckResult::fail("ping.responds", "ping returned malformed error", resp_str))
+              }
+            _ => results.push(CheckResult::fail("ping.malformed", "response has neither result nor error", resp_str))
+          }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("ping.timeout", e, ""))
+  }
+  results
+}
+
+///| Keepalive: repeated pings must all succeed (session liveness under load).
+pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let mut all_ok = true
+  for i in 1..=3 {
+    match session.request("ping", Json::object({}), 3000) {
+      Ok(resp_str) => {
+        let j = @json.parse(resp_str) catch { _ => Json::null() }
+        if j is Json::Null {
+          all_ok = false
+          results.push(CheckResult::fail("keepalive.parse_\{i}", "JSON parse error", resp_str))
+        } else if j.value("result") is Some(_) {
+          ()
+        } else {
+          all_ok = false
+          results.push(CheckResult::fail("keepalive.no_result_\{i}", "keepalive ping \{i} failed", resp_str))
+        }
+      }
+      Err(e) => {
+        all_ok = false
+        results.push(CheckResult::fail("keepalive.timeout_\{i}", e, ""))
+      }
+    }
+  }
+  if all_ok {
+    results.push(CheckResult::pass("keepalive.stable", "3/3 keepalive pings succeeded"))
+  }
+  results
+}
+
+///| Protocol version negotiation matrix: probe servers with several
+/// protocolVersion values; a compliant server either echoes a supported
+/// version or replies with a JSON-RPC error — never a malformed response.
+pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let versions = ["2026-07-28", "2025-06-18", "2025-03-26", "1999-01-01"]
+  for v in versions {
+    let params = Json::object({
+      "protocolVersion": Json::string(v),
+      "capabilities": Json::object({}),
+      "clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string("0.5.0") }),
+      "_meta": Json::object({
+        "io.modelcontextprotocol/protocolVersion": Json::string(v),
+        "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+      }),
+    })
+    match session.request("initialize", params, 5000) {
+      Ok(resp_str) => {
+        let j = @json.parse(resp_str) catch { _ => Json::null() }
+        if j is Json::Null {
+          results.push(CheckResult::fail("negotiation.\{v}.parse", "JSON parse error", resp_str))
+        } else {
+          match j.value("result") {
+          Some(Json::Object(r)) =>
+            match r.get("protocolVersion") {
+              Some(Json::String(echoed)) => {
+                if echoed == v {
+                  results.push(CheckResult::pass("negotiation.\{v}", "server echoed \{v}"))
+                } else {
+                  results.push(CheckResult::pass("negotiation.\{v}.fallback", "server negotiated down to \{echoed} (allowed)"))
+                }
+              }
+              _ => results.push(CheckResult::fail("negotiation.\{v}.no_version", "result missing protocolVersion", resp_str))
+            }
+          _ =>
+            match j.value("error") {
+              // Unsupported version → error is compliant behavior
+              Some(_) => results.push(CheckResult::pass("negotiation.\{v}.rejected", "unsupported version rejected with error (compliant)"))
+              _ => results.push(CheckResult::fail("negotiation.\{v}.malformed", "response has neither result nor error", resp_str))
+            }
+          }
+        }
+      }
+      Err(e) => results.push(CheckResult::fail("negotiation.\{v}.timeout", e, ""))
+    }
   }
   results
 }

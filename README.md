@@ -17,13 +17,32 @@
 
 Output: JSON report + optional Markdown summary + CI gate (exit code 0 = pass, 1 = any fail).
 
-## Reports (v0.4)
+## Reports (v0.5)
 
 Every run writes to the report directory:
 - `report.json` — machine-readable CI artifact (per-check results + summary counts)
 - `report.md` — human-readable summary table + details
 - `report.html` — standalone styled page (collapsible per-check details)
 - `report-junit.xml` — JUnit XML, only with `--junit` (CI-native test results)
+
+### Check categories (v0.5)
+
+- **initialize** — jsonrpc, server_info, protocol_version
+- **capabilities** — response structure
+- **tools/list** — tool schema (name, description mandatory)
+- **tools/call** — error path (-32601 for unknown tool)
+- **notifications** — session liveness after unknown notifications
+- **idempotency** — repeated identical requests
+- **resources/list, resources/read** — resource schema + error path
+- **prompts/list** — prompt schema (name mandatory)
+- **ping, keepalive** — spec-mandated ping response + session stability
+- **protocol negotiation** — matrix across versions 2026-07-28 / 2025-06-18 / 2025-03-26 / 1999-01-01
+
+### Multi-server parallel probe
+
+```bash
+moon run cmd/e2e -- --server "mcp-server-A" --server "mcp-server-B" --report ./report --junit
+```
 
 Report writing is an observation surface — it never changes the exit verdict.
 
