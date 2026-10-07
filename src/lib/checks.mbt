@@ -12,12 +12,16 @@ fn parse_resp(resp_str : String, label : String, results : Array[CheckResult]) -
 }
 
 ///| Initialize handshake check.
-pub fn check_initialize(session : Session) -> Array[CheckResult] {
+pub async fn check_initialize(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   let params = Json::object({
     "protocolVersion": Json::string("2026-07-28"),
     "capabilities": Json::object({}),
-    "clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string("0.1.0") }),
+    "clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string("0.2.0") }),
+    "_meta": Json::object({
+      "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28"),
+      "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+    }),
   })
   match session.request("initialize", params, 5000) {
     Ok(resp_str) => {
@@ -56,7 +60,7 @@ pub fn check_initialize(session : Session) -> Array[CheckResult] {
 }
 
 ///| Capabilities check: declared vs actual behavior.
-pub fn check_capabilities(session : Session) -> Array[CheckResult] {
+pub async fn check_capabilities(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   match session.request("initialize", Json::object({}), 5000) {
     Ok(resp_str) => {
@@ -86,7 +90,7 @@ pub fn check_capabilities(session : Session) -> Array[CheckResult] {
 }
 
 ///| tools/list schema check.
-pub fn check_tools_list(session : Session) -> Array[CheckResult] {
+pub async fn check_tools_list(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   match session.request("tools/list", Json::object({}), 5000) {
     Ok(resp_str) => {
@@ -132,7 +136,7 @@ pub fn check_tools_list(session : Session) -> Array[CheckResult] {
 }
 
 ///| tools/call check: error path.
-pub fn check_tools_call(session : Session) -> Array[CheckResult] {
+pub async fn check_tools_call(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   match session.request("tools/call", Json::object({ "name": Json::string("__mcpconftest_nonexistent__"), "arguments": Json::object({}) }), 5000) {
     Ok(resp_str) => {
@@ -158,7 +162,7 @@ pub fn check_tools_call(session : Session) -> Array[CheckResult] {
 }
 
 ///| Notification handling check.
-pub fn check_notifications(session : Session) -> Array[CheckResult] {
+pub async fn check_notifications(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   match session.notify("notifications/mcpconftest_unknown", Json::object({})) {
     Ok(_) => results.push(CheckResult::pass("notifications.unknown", "unknown notification sent without crash"))
@@ -172,13 +176,17 @@ pub fn check_notifications(session : Session) -> Array[CheckResult] {
 }
 
 ///| Session idempotency check.
-pub fn check_idempotency(session : Session) -> Array[CheckResult] {
+pub async fn check_idempotency(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   match session.request("tools/list", Json::object({}), 5000) {
     Ok(resp1) => {
       match session.request("tools/list", Json::object({}), 5000) {
         Ok(resp2) => {
-          if resp1 == resp2 {
+          let j1 = @json.parse(resp1) catch { _ => Json::null() }
+          let j2 = @json.parse(resp2) catch { _ => Json::null() }
+          let r1 = j1.value("result")
+          let r2 = j2.value("result")
+          if r1 == r2 {
             results.push(CheckResult::pass("idempotency", "repeated tools/list returned same result"))
           } else {
             results.push(CheckResult::fail("idempotency", "repeated tools/list returned different results", ""))

@@ -20,14 +20,14 @@ Output: JSON report + optional Markdown summary + CI gate (exit code 0 = pass, 1
 ## Quick start
 
 ```bash
-# Build
-moon build
+# E2E against the built-in partially-compliant fixture (strict expectations)
+moon run cmd/e2e
 
-# Run against a local MCP server
-moon run cmd/cli/main -- run --server "path/to/your-mcp-server"
+# Probe an arbitrary MCP server
+moon run cmd/e2e -- --server "node path/to/your-mcp-server.js serve"
 
-# With report output + CI gate
-moon run cmd/cli/main -- run --server "..." --report ./report --ci
+# CI gate (moon check + moon test + e2e fixture, all must pass)
+bash scripts/ci.sh
 ```
 
 ## Project layout
@@ -36,11 +36,15 @@ moon run cmd/cli/main -- run --server "..." --report ./report --ci
 src/lib/
   types.mbt       — CheckResult / Report types + constructors
   types_test.mbt  — in-package unit tests
-  session.mbt     — stdio JSON-RPC session driver
+  session.mbt     — real stdio JSON-RPC session driver (child_process.spawn + async FFI)
   checks.mbt      — six conformance check categories
   report.mbt      — report rendering (JSON / Markdown) + build_report
-cmd/cli/main.mbt  — CLI entry point
-cmd/main.mbt      — demo entry point
+cmd/e2e/main.mbt  — e2e entry: fixture regression + --server probing
+tests/fixtures/   — deliberately partially-compliant MCP server (node)
+scripts/ci.sh     — CI gate script
+docs/
+  session-arch.md — transport design notes
+  fist-mbt-probe.md — real-server probe findings
 ```
 
 ## Why MoonBit?

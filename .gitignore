@@ -2,3 +2,4 @@
 _build/
 *.mbti
 .moon-lock
+fist-mbt.db*
