@@ -1,5 +1,10 @@
 ///| Render report as JSON string.
 pub fn Report::to_json(self : Report) -> String {
+  let sum = self.summarize()
+  let get_n = (k : String) => match sum.get(k) {
+    Some(v) => v
+    None => 0
+  }
   let arr = Json::array(self.results.map(fn(r) {
     let sev = match r.severity {
       Pass => Json::string("pass")
@@ -23,7 +28,12 @@ pub fn Report::to_json(self : Report) -> String {
     "protocol_version": Json::string(self.protocol_version),
     "timestamp": Json::string(self.timestamp),
     "results": arr,
-    "summary": Json::object(Map([])),
+    "summary": Json::object({
+      "pass": Json::number(get_n("pass").to_double()),
+      "fail": Json::number(get_n("fail").to_double()),
+      "skip": Json::number(get_n("skip").to_double()),
+      "warn": Json::number(get_n("warn").to_double()),
+    }),
   }).stringify()
 }
 
@@ -92,3 +102,41 @@ pub fn build_report(
   r.summary = r.summarize()
   r
 }
+
+///| Write report files to dir: report.json + report.md. Returns Ok on success.
+pub fn Report::write_to_dir(self : Report, dir : String) -> Result[Unit, String] {
+  if fs_mkdir_p(dir) != 0 {
+    return Err("mkdir failed: \{dir}")
+  }
+  if fs_write_file("\{dir}/report.json", self.to_json()) != 0 {
+    return Err("write failed: \{dir}/report.json")
+  }
+  if fs_write_file("\{dir}/report.md", self.to_markdown()) != 0 {
+    return Err("write failed: \{dir}/report.md")
+  }
+  Ok(())
+}
+
+///| mkdir -p (js target, sync).
+extern "js" fn fs_mkdir_p(dir : String) -> Int =
+  #| (dir) => {
+  #|   try {
+  #|     const fs = process.getBuiltinModule('node:fs')
+  #|     fs.mkdirSync(dir, { recursive: true })
+  #|     return 0
+  #|   } catch (e) {
+  #|     return -1
+  #|   }
+  #| }
+
+///| write file (js target, sync).
+extern "js" fn fs_write_file(path : String, content : String) -> Int =
+  #| (path, content) => {
+  #|   try {
+  #|     const fs = process.getBuiltinModule('node:fs')
+  #|     fs.writeFileSync(path, content, 'utf8')
+  #|     return 0
+  #|   } catch (e) {
+  #|     return -1
+  #|   }
+  #| }

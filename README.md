@@ -17,6 +17,13 @@
 
 Output: JSON report + optional Markdown summary + CI gate (exit code 0 = pass, 1 = any fail).
 
+## Reports (v0.3)
+
+Every run writes `report.json` (machine-readable CI artifact, full per-check results
+with summary counts) and `report.md` (human-readable summary table + details) to the
+report directory. Report writing is an observation surface — it never changes the
+exit verdict.
+
 ## Quick start
 
 ```bash
@@ -28,6 +35,9 @@ moon run cmd/e2e -- --server "node path/to/your-mcp-server.js serve"
 
 # CI gate (moon check + moon test + e2e fixture, all must pass)
 bash scripts/ci.sh
+
+# Reports land in ./mcpconftest-report/ (report.json + report.md)
+# Customize: moon run cmd/e2e -- --report ./my-report   ("" disables)
 ```
 
 ## Project layout
