@@ -2,32 +2,95 @@
 
 MCP protocol conformance probe — checks any MCP server (stdio or WebSocket) against the spec.
 
+## Quick start
+
+```bash
+# 1. Install (from mooncakes.io)
+moon add vicTop-cw/mcpconftest
+
+# 2. Run against built-in fixture (no external server needed)
+moon run cmd -- run
+
+# 3. Check the report
+cat mcpconftest-report/report.md
+```
+
+## Demo output
+
+Running against the built-in partially-compliant fixture:
+
+```
+$ moon run cmd -- run
+probing fixture server
+[fixture] 20/32 pass, 8 fail
+report written: ./mcpconftest-report/report.{json,md,html}
+mcpconftest: ALL GREEN (fixture)
+```
+
+Report summary (`report.md`):
+
+```
+# mcpconftest report
+Server: `fixture`
+Protocol: 2026-07-28
+
+## Summary
+| Metric | Count |
+|---|---|
+| Pass | 20 |
+| Fail | 8 |
+| Skip | 4 |
+| Warn | 0 |
+| Total timing | 141ms |
+| Avg per check | 4ms |
+```
+
+Sample findings — fixture deliberately violates spec to prove detection works:
+
+```
+### ❌ tools_list.description
+tool missing description
+{"name":"no_desc_tool"}
+
+### ❌ tools_call.error_code
+expected -32601, got -32000 (wrong error code for unknown tool)
+
+### ❌ ping.responds
+ping returned -32601 (spec: server MUST respond to ping)
+
+### ❌ keepalive.no_result_1
+keepalive ping 1 failed
+
+### ⏭️ logging.unsupported
+server does not support logging
+```
+
+Exit code: `0` (ALL GREEN) — fixture is *expected* to have failures; the probe correctly detects them. Run your own server to verify real conformance.
+
 ## Usage
 
 ```bash
-# Run against built-in fixture (default)
-moon run cmd -- run
+# Probe your own MCP server (stdio)
+moon run cmd -- run --server "node my-mcp-server.js"
 
-# Probe one or more servers in parallel
-moon run cmd -- run --server "node my-mcp-server.js" --server "python server.py"
+# Probe multiple servers in parallel
+moon run cmd -- run --server "mcp-server-A" --server "mcp-server-B"
 
 # Probe a WebSocket MCP server
 moon run cmd -- run --server "ws://localhost:3000/mcp"
 
-# Write reports to custom directory (default ./mcpconftest-report, "" disables)
+# Custom report directory (default ./mcpconftest-report, "" disables)
 moon run cmd -- run --server "node server.js" --report ./my-report
 
-# Include JUnit XML output
+# Include JUnit XML (CI-native)
 moon run cmd -- run --junit
 
-# List available check categories
+# List check categories
 moon run cmd -- list-checks
 
 # Print version
 moon run cmd -- version
 ```
-
-Output: JSON + Markdown + HTML reports + optional JUnit XML + CI gate (exit code 0 = pass, 1 = any fail).
 
 ## Reports
 
@@ -61,7 +124,7 @@ Every run writes to the report directory:
 
 ## Performance benchmark
 
-Each check reports individual `timing_ms`. Summary includes `total_timing_ms` and `avg_timing_ms` across all checks.
+Each check reports individual `timing_ms`. Summary includes `total_timing_ms` and `avg_per_check_ms` across all checks.
 
 ## Multi-server parallel probe
 

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mcpconftest report — node tests/demo/compliant_server.js</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#1a1a2e}
+h1{border-bottom:2px solid #16213e}table{border-collapse:collapse;margin:1rem 0}
+td,th{border:1px solid #ccc;padding:.4rem .8rem;text-align:left}
+.pass{color:#0a7d32}.fail{color:#c0392b;font-weight:bold}.skip{color:#888}.warn{color:#b8860b}
+details{margin:.5rem 0}summary{cursor:pointer}
+pre{background:#f4f4f8;padding:.6rem;overflow-x:auto}
+</style>
+</head>
+<body>
+<h1>mcpconftest report</h1>
+<p>Server: <code>node tests/demo/compliant_server.js</code><br>
+Protocol: 2026-07-28<br>
+Timestamp: 2026-10-07T13:37:59.763Z</p>
+<h2>Summary</h2>
+<table><tr><th>Pass</th><th>Fail</th><th>Skip</th><th>Warn</th></tr>
+<tr><td>24</td><td>1</td><td>2</td><td>0</td></tr></table>
+<h2>Details</h2>
+<details><summary><span class="pass">&#9989; init.jsonrpc</span> — jsonrpc=2.0</summary>
+</details>
+<details><summary><span class="pass">&#9989; init.server_info</span> — serverInfo present</summary>
+</details>
+<details><summary><span class="pass">&#9989; init.protocol_version</span> — version=2026-07-28</summary>
+</details>
+<details><summary><span class="pass">&#9989; init.notifications_initialized</span> — sent OK</summary>
+</details>
+<details><summary><span class="pass">&#9989; caps.tools</span> — tools capability declared</summary>
+</details>
+<details><summary><span class="pass">&#9989; tools_list.name</span> — tool has name</summary>
+</details>
+<details><summary><span class="pass">&#9989; tools_list.description</span> — tool has description</summary>
+</details>
+<details><summary><span class="pass">&#9989; tools_list.name</span> — tool has name</summary>
+</details>
+<details><summary><span class="pass">&#9989; tools_list.description</span> — tool has description</summary>
+</details>
+<details><summary><span class="pass">&#9989; tools_call.error</span> — non-existent tool returned correct error code -32601</summary>
+</details>
+<details><summary><span class="pass">&#9989; notifications.unknown</span> — unknown notification sent without crash</summary>
+</details>
+<details><summary><span class="pass">&#9989; notifications.alive</span> — session still alive after unknown notification</summary>
+</details>
+<details><summary><span class="pass">&#9989; idempotency</span> — repeated tools/list returned same result</summary>
+</details>
+<details><summary><span class="pass">&#9989; resources_list.uri</span> — resource has uri</summary>
+</details>
+<details><summary><span class="pass">&#9989; resources_list.name</span> — resource has name</summary>
+</details>
+<details><summary><span class="pass">&#9989; prompts_list.name</span> — prompt has name</summary>
+</details>
+<details><summary><span class="fail">&#10060; resources_read.no_error</span> — expected error for non-existent resource</summary>
+<pre>{&quot;jsonrpc":"2.0","id":10,"result":{"contents":[{"uri":"file:///__mcpconftest_nonexistent__","text":"Hello from demo resource"}]}}</pre>
+</details>
+<details><summary><span class="pass">&#9989; ping.responds</span> — ping answered with result</summary>
+</details>
+<details><summary><span class="pass">&#9989; keepalive.stable</span> — 3/3 keepalive pings succeeded</summary>
+</details>
+<details><summary><span class="pass">&#9989; negotiation.2026-07-28</span> — server echoed 2026-07-28</summary>
+</details>
+<details><summary><span class="pass">&#9989; negotiation.2025-06-18</span> — server echoed 2025-06-18</summary>
+</details>
+<details><summary><span class="pass">&#9989; negotiation.2025-03-26</span> — server echoed 2025-03-26</summary>
+</details>
+<details><summary><span class="pass">&#9989; negotiation.1999-01-01.rejected</span> — unsupported version rejected with error (compliant)</summary>
+</details>
+<details><summary><span class="pass">&#9989; logging.set_level</span> — logging/setLevel accepted</summary>
+</details>
+<details><summary><span class="pass">&#9989; completion.values</span> — completion returned values array</summary>
+</details>
+<details><summary><span class="skip">&#9209;&#65039; subscribe.unsupported</span> — server does not support subscribe</summary>
+</details>
+<details><summary><span class="skip">&#9209;&#65039; sampling.unsupported</span> — server does not support sampling</summary>
+</details>
+</body>
+</html>
