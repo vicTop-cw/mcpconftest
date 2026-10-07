@@ -1,5 +1,6 @@
 import {
   "vicTop-cw/mcpconftest/src/lib",
+  "moonbitlang/async",
   "moonbitlang/core/env",
 }
 

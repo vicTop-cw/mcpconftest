@@ -429,3 +429,146 @@ pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult]
   }
   results
 }
+
+///| logging/setLevel check (skip when capability absent).
+pub async fn check_logging(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("logging/setLevel", Json::object({ "level": Json::string("info") }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("logging.parse", "JSON parse error", resp_str))
+      } else {
+        match j.value("result") {
+          Some(_) => results.push(CheckResult::pass("logging.set_level", "logging/setLevel accepted"))
+          _ =>
+            match j.value("error") {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("logging.unsupported", "server does not support logging"))
+                  Some(_) => results.push(CheckResult::fail("logging.error", "unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("logging.malformed", "malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("logging.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("logging.unreachable", e))
+  }
+  results
+}
+
+///| completion/complete check (skip when capability absent).
+pub async fn check_completion(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("completion/complete", Json::object({
+    "ref": Json::object({ "type": Json::string("ref/prompt"), "name": Json::string("__mcpconftest_dummy__") }),
+    "argument": Json::object({ "name": Json::string("test"), "value": Json::string("") }),
+  }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("completion.parse", "JSON parse error", resp_str))
+      } else {
+        match j.value("result") {
+          Some(Json::Object(r)) =>
+            match r.get("completion") {
+              Some(Json::Object(c)) =>
+                match c.get("values") {
+                  Some(Json::Array(_)) => results.push(CheckResult::pass("completion.values", "completion returned values array"))
+                  _ => results.push(CheckResult::fail("completion.values", "completion object missing values", resp_str))
+                }
+              _ => results.push(CheckResult::fail("completion.result", "result missing completion object", resp_str))
+            }
+          Some(_) => results.push(CheckResult::pass("completion.responded", "completion responded (result present)"))
+          _ =>
+            match j.value("error") {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("completion.unsupported", "server does not support completion"))
+                  Some(_) => results.push(CheckResult::fail("completion.error", "unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("completion.malformed", "malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("completion.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("completion.unreachable", e))
+  }
+  results
+}
+
+///| resources/subscribe + notifications/resources/updated check.
+pub async fn check_subscribe(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("resources/subscribe", Json::object({ "uri": Json::string("file:///__mcpconftest_dummy__") }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("subscribe.parse", "JSON parse error", resp_str))
+      } else {
+        match j.value("result") {
+          Some(_) => results.push(CheckResult::pass("subscribe.ok", "resources/subscribe accepted"))
+          _ =>
+            match j.value("error") {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("subscribe.unsupported", "server does not support subscribe"))
+                  Some(_) => results.push(CheckResult::fail("subscribe.error", "unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("subscribe.malformed", "malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("subscribe.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("subscribe.unreachable", e))
+  }
+  results
+}
+
+///| sampling/createMessage check (skip when capability absent).
+pub async fn check_sampling(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("sampling/createMessage", Json::object({
+    "messages": Json::array([Json::object({
+      "role": Json::string("user"),
+      "content": Json::object({ "type": Json::string("text"), "text": Json::string("ping") }),
+    })]),
+    "maxTokens": Json::number(10.0),
+  }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("sampling.parse", "JSON parse error", resp_str))
+      } else {
+        match j.value("result") {
+          Some(Json::Object(r)) =>
+            match r.get("content") {
+              Some(Json::Object(c)) =>
+                match c.get("text") {
+                  Some(Json::String(_)) => results.push(CheckResult::pass("sampling.content", "sampling returned content.text"))
+                  _ => results.push(CheckResult::fail("sampling.content", "content object missing text", resp_str))
+                }
+              _ => results.push(CheckResult::fail("sampling.result", "result missing content object", resp_str))
+            }
+          Some(_) => results.push(CheckResult::pass("sampling.responded", "sampling responded (result present)"))
+          _ =>
+            match j.value("error") {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("sampling.unsupported", "server does not support sampling"))
+                  Some(_) => results.push(CheckResult::fail("sampling.error", "unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("sampling.malformed", "malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("sampling.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::skip("sampling.unreachable", e))
+  }
+  results
+}

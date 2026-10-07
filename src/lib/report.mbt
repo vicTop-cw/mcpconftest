@@ -21,6 +21,7 @@ pub fn Report::to_json(self : Report) -> String {
       "severity": sev,
       "message": Json::string(r.message),
       "evidence": ev,
+      "timing_ms": Json::number(r.timing_ms.to_double()),
     })
   }))
   Json::object({
@@ -34,6 +35,8 @@ pub fn Report::to_json(self : Report) -> String {
       "skip": Json::number(get_n("skip").to_double()),
       "warn": Json::number(get_n("warn").to_double()),
     }),
+    "total_timing_ms": Json::number(self.total_timing_ms.to_double()),
+    "avg_timing_ms": Json::number(self.avg_timing_ms.to_double()),
   }).stringify()
 }
 
@@ -44,7 +47,6 @@ pub fn Report::to_markdown(self : Report) -> String {
   ignore(sb.write_string("Server: `\{self.server_cmd}`\n\n"))
   ignore(sb.write_string("Protocol: \{self.protocol_version}\n\n"))
   ignore(sb.write_string("Timestamp: \{self.timestamp}\n\n"))
-  ignore(sb.write_string("## Summary\n\n"))
   let p = match self.summary.get("pass") {
     Some(v) => v
     None => 0
@@ -61,12 +63,15 @@ pub fn Report::to_markdown(self : Report) -> String {
     Some(v) => v
     None => 0
   }
+  ignore(sb.write_string("## Summary\n\n"))
   ignore(sb.write_string("| Metric | Count |\n"))
   ignore(sb.write_string("|---|---|\n"))
   ignore(sb.write_string("| Pass | \{p} |\n"))
   ignore(sb.write_string("| Fail | \{f} |\n"))
   ignore(sb.write_string("| Skip | \{s} |\n"))
-  ignore(sb.write_string("| Warn | \{w} |\n\n"))
+  ignore(sb.write_string("| Warn | \{w} |\n"))
+  ignore(sb.write_string("| Total timing | \{self.total_timing_ms}ms |\n"))
+  ignore(sb.write_string("| Avg per check | \{self.avg_timing_ms}ms |\n\n"))
   ignore(sb.write_string("## Details\n\n"))
   for r in self.results {
     let icon = match r.severity {
@@ -75,7 +80,7 @@ pub fn Report::to_markdown(self : Report) -> String {
       Skip => "⏭️"
       Warn => "⚠️"
     }
-    ignore(sb.write_string("### \{icon} \{r.name}\n\n"))
+    ignore(sb.write_string("### \{icon} \{r.name} (\{r.timing_ms}ms)\n\n"))
     ignore(sb.write_string("\{r.message}\n\n"))
     match r.evidence {
       Some(e) if e.length() > 0 => ignore(sb.write_string("```json\n\{e}\n```\n\n"))
@@ -98,6 +103,8 @@ pub fn build_report(
     results,
     summary: Map([]),
     timestamp: ts,
+    total_timing_ms: 0,
+    avg_timing_ms: 0,
   }
   r.summary = r.summarize()
   r

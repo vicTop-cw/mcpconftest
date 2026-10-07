@@ -1,17 +1,23 @@
-///| stdio JSON-RPC session driver (JS target only).
+///| JSON-RPC session driver (JS target) — supports stdio and WebSocket transports.
 ///
-/// Spawns the target MCP server as a child process, speaks JSON-RPC
-/// over stdin/stdout with configurable timeouts.
-/// All methods are async (js_async Promise bridge).
+/// stdio: spawn child process, speak JSON-RPC over stdin/stdout.
+/// WebSocket: connect to ws:// or wss:// URL, speak JSON-RPC over messages.
 
-///| A running stdio session.
+///| Transport kind.
+pub(all) enum Transport {
+  Stdio
+  WebSocket
+}
+
+///| A running session (stdio or WebSocket).
 pub(all) struct Session {
   mut next_id : Int
   mut alive : Bool
   mut handle_id : Int
+  mut transport : Transport
 }
 
-///| Spawn a new session with the given command (e.g. "node server.js").
+///| Spawn a new stdio session with the given command (e.g. "node server.js").
 pub async fn Session::new(cmd : String) -> Session {
   let parts = cmd.split(" ")
   let argv : Array[String] = []
@@ -19,7 +25,13 @@ pub async fn Session::new(cmd : String) -> Session {
     argv.push(p.to_string())
   }
   let handle_id = js_spawn_mcp(argv, ".").wait() catch { _ => -1 }
-  { next_id: 1, alive: handle_id >= 0, handle_id }
+  { next_id: 1, alive: handle_id >= 0, handle_id, transport: Stdio }
+}
+
+///| Connect to a WebSocket MCP server.
+pub async fn Session::new_ws(url : String) -> Session {
+  let handle_id = js_ws_connect(url).wait() catch { _ => -1 }
+  { next_id: 1, alive: handle_id >= 0, handle_id, transport: WebSocket }
 }
 
 ///| Send a JSON-RPC request, wait for response with timeout.
@@ -31,48 +43,73 @@ pub async fn Session::request(
 ) -> Result[String, String] {
   let id = self.next_id
   self.next_id += 1
-  let req = Json::object({
-    "jsonrpc": Json::string("2.0"),
-    "id": Json::number(id.to_double()),
-    "method": Json::string(meth),
-    "params": params,
-  })
-  let req_str = (match params {
-    Json::Object(m) => {
-      let m2 = m.copy()
-      if m2.get("_meta") is Some(_) {
-        ()
-      } else {
-        m2.set("_meta", Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }))
-      }
+  let req_str = match self.transport {
+    Stdio => {
+      (match params {
+        Json::Object(m) => {
+          let m2 = m.copy()
+          if m2.get("_meta") is Some(_) {
+            ()
+          } else {
+            m2.set("_meta", Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }))
+          }
+          Json::object({
+            "jsonrpc": Json::string("2.0"),
+            "id": Json::number(id.to_double()),
+            "method": Json::string(meth),
+            "params": Json::object(m2),
+          }).stringify()
+        }
+        _ => Json::object({
+          "jsonrpc": Json::string("2.0"),
+          "id": Json::number(id.to_double()),
+          "method": Json::string(meth),
+          "params": Json::object({
+            "_meta": Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }),
+          }),
+        }).stringify()
+      }) + "\n"
+    }
+    WebSocket => {
       Json::object({
         "jsonrpc": Json::string("2.0"),
         "id": Json::number(id.to_double()),
         "method": Json::string(meth),
-        "params": Json::object(m2),
+        "params": params,
       }).stringify()
     }
-    _ => Json::object({
-      "jsonrpc": Json::string("2.0"),
-      "id": Json::number(id.to_double()),
-      "method": Json::string(meth),
-      "params": Json::object({
-        "_meta": Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }),
-      }),
-    }).stringify()
-  }) + "\n"
-  ignore(js_mcp_write(self.handle_id, req_str).wait() catch {
-    _ => -1
-  })
-  let line = js_mcp_read_line(self.handle_id, timeout_ms).wait() catch {
-    _ => return Err("read failed")
   }
-  if line == "__MCP_TIMEOUT__" {
-    Err("timeout after \{timeout_ms}ms")
-  } else if line == "__MCP_ERROR__" {
-    Err("read error (session invalid)")
-  } else {
-    Ok(line)
+  match self.transport {
+    Stdio => {
+      ignore(js_mcp_write(self.handle_id, req_str).wait() catch {
+        _ => -1
+      })
+      let line = js_mcp_read_line(self.handle_id, timeout_ms).wait() catch {
+        _ => return Err("read failed")
+      }
+      if line == "__MCP_TIMEOUT__" {
+        Err("timeout after \{timeout_ms}ms")
+      } else if line == "__MCP_ERROR__" {
+        Err("read error (session invalid)")
+      } else {
+        Ok(line)
+      }
+    }
+    WebSocket => {
+      ignore(js_ws_write(self.handle_id, req_str).wait() catch {
+        _ => return Err("write failed")
+      })
+      let resp = js_ws_read(self.handle_id, timeout_ms).wait() catch {
+        _ => return Err("read failed")
+      }
+      if resp == "__MCP_TIMEOUT__" {
+        Err("timeout after \{timeout_ms}ms")
+      } else if resp == "__MCP_ERROR__" {
+        Err("read error (session invalid)")
+      } else {
+        Ok(resp)
+      }
+    }
   }
 }
 
@@ -82,24 +119,42 @@ pub async fn Session::notify(
   meth : String,
   params : Json,
 ) -> Result[Unit, String] {
-  let notif = Json::object({
+  let s = Json::object({
     "jsonrpc": Json::string("2.0"),
     "method": Json::string(meth),
     "params": params,
-  })
-  let s = notif.stringify() + "\n"
-  ignore(js_mcp_write(self.handle_id, s).wait() catch {
-    _ => -1
-  })
+  }).stringify()
+  match self.transport {
+    Stdio => {
+      let s2 = s + "\n"
+      ignore(js_mcp_write(self.handle_id, s2).wait() catch {
+        _ => -1
+      })
+    }
+    WebSocket => {
+      ignore(js_ws_write(self.handle_id, s).wait() catch {
+        _ => return Err("write failed")
+      })
+    }
+  }
   Ok(())
 }
 
-///| Close the session (kills the child process).
+///| Close the session (kill child or close WebSocket).
 pub async fn Session::close(self : Session) -> Result[Unit, String] {
-  ignore(js_mcp_close(self.handle_id).wait() catch { _ => -1 })
+  match self.transport {
+    Stdio => {
+      ignore(js_mcp_close(self.handle_id).wait() catch { _ => -1 })
+    }
+    WebSocket => {
+      ignore(js_ws_close(self.handle_id).wait() catch { _ => -1 })
+    }
+  }
   self.alive = false
   Ok(())
 }
+
+// ---- stdio FFI ----
 
 extern "js" fn js_spawn_mcp(
   argv : Array[String],
@@ -173,6 +228,10 @@ extern "js" fn js_mcp_read_line(
   #|   })
   #| }
 
+///| Current time in milliseconds (js target, monotonic).
+extern "js" fn js_now_ms() -> Int =
+  #| () => Date.now()
+
 extern "js" fn js_mcp_close(handle_id : Int) -> @js_async.Promise[Int] =
   #| async (handle_id) => {
   #|   const session = globalThis.__mcp_sessions[handle_id]
@@ -186,5 +245,94 @@ extern "js" fn js_mcp_close(handle_id : Int) -> @js_async.Promise[Int] =
   #|     }
   #|   } catch (e) {}
   #|   globalThis.__mcp_sessions[handle_id] = null
+  #|   return 0
+  #| }
+
+// ---- WebSocket FFI ----
+
+extern "js" fn js_ws_connect(url : String) -> @js_async.Promise[Int] =
+  #| async (url) => {
+  #|   try {
+  #|     const WS = globalThis.WebSocket || (await import('ws')).WebSocket
+  #|     if (!globalThis.__mcp_ws) globalThis.__mcp_ws = []
+  #|     const id = globalThis.__mcp_ws.length
+  #|     const ws = new WS(url)
+  #|     globalThis.__mcp_ws[id] = { ws, pending: {}, buf: '' }
+  #|     ws.onmessage = (ev) => {
+  #|       try {
+  #|         const msg = JSON.parse(ev.data)
+  #|         if (msg.id !== undefined && globalThis.__mcp_ws[id].pending[msg.id]) {
+  #|           globalThis.__mcp_ws[id].pending[msg.id](ev.data)
+  #|           delete globalThis.__mcp_ws[id].pending[msg.id]
+  #|         }
+  #|       } catch (e) {}
+  #|     }
+  #|     await new Promise((resolve, reject) => {
+  #|       ws.onopen = () => resolve()
+  #|       ws.onerror = () => reject(-1)
+  #|       setTimeout(() => reject(-1), 5000)
+  #|     })
+  #|     return id
+  #|   } catch (e) {
+  #|     return -1
+  #|   }
+  #| }
+
+extern "js" fn js_ws_write(
+  handle_id : Int,
+  message : String,
+) -> @js_async.Promise[Int] =
+  #| async (handle_id, message) => {
+  #|   const session = globalThis.__mcp_ws[handle_id]
+  #|   if (!session || !session.ws || session.ws.readyState !== 1) return -1
+  #|   try {
+  #|     session.ws.send(message)
+  #|     return 0
+  #|   } catch (e) {
+  #|     return -1
+  #|   }
+  #| }
+
+extern "js" fn js_ws_read(
+  handle_id : Int,
+  timeout_ms : Int,
+) -> @js_async.Promise[String] =
+  #| async (handle_id, timeout_ms) => {
+  #|   const session = globalThis.__mcp_ws[handle_id]
+  #|   if (!session || !session.ws) return '__MCP_ERROR__'
+  #|   return new Promise((resolve) => {
+  #|     let settled = false
+  #|     const finish = (val) => {
+  #|       if (settled) return
+  #|       settled = true
+  #|       clearTimeout(timer)
+  #|       resolve(val)
+  #|     }
+  #|     const onMsg = (ev) => {
+  #|       try {
+  #|         const msg = JSON.parse(ev.data)
+  #|         if (msg.id !== undefined) {
+  #|           finish(ev.data)
+  #|         }
+  #|       } catch (e) {}
+  #|     }
+  #|     session.ws.addEventListener('message', onMsg, { once: false })
+  #|     const timer = setTimeout(() => {
+  #|       session.ws.removeEventListener('message', onMsg)
+  #|       finish('__MCP_TIMEOUT__')
+  #|     }, timeout_ms)
+  #|   })
+  #| }
+
+extern "js" fn js_ws_close(handle_id : Int) -> @js_async.Promise[Int] =
+  #| async (handle_id) => {
+  #|   const session = globalThis.__mcp_ws[handle_id]
+  #|   if (!session) return 0
+  #|   try {
+  #|     if (session.ws && session.ws.readyState <= 1) {
+  #|       session.ws.close()
+  #|     }
+  #|   } catch (e) {}
+  #|   globalThis.__mcp_ws[handle_id] = null
   #|   return 0
   #| }

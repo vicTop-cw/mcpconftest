@@ -14,6 +14,7 @@ pub(all) struct CheckResult {
   mut severity : Severity
   mut message : String
   mut evidence : Option[String]
+  mut timing_ms : Int
 }
 
 ///| Full report for one server probe.
@@ -23,21 +24,23 @@ pub(all) struct Report {
   mut results : Array[CheckResult]
   mut summary : Map[String, Int]
   mut timestamp : String
+  mut total_timing_ms : Int
+  mut avg_timing_ms : Int
 }
 
 ///| Create a passing result.
 pub fn CheckResult::pass(name : String, msg : String) -> CheckResult {
-  { name, severity: Pass, message: msg, evidence: None }
+  { name, severity: Pass, message: msg, evidence: None, timing_ms: 0 }
 }
 
 ///| Create a failing result.
 pub fn CheckResult::fail(name : String, msg : String, ev : String) -> CheckResult {
-  { name, severity: Fail, message: msg, evidence: Some(ev) }
+  { name, severity: Fail, message: msg, evidence: Some(ev), timing_ms: 0 }
 }
 
 ///| Create a skipped result.
 pub fn CheckResult::skip(name : String, msg : String) -> CheckResult {
-  { name, severity: Skip, message: msg, evidence: None }
+  { name, severity: Skip, message: msg, evidence: None, timing_ms: 0 }
 }
 
 ///| Count results by severity.

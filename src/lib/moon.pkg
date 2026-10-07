@@ -1,6 +1,7 @@
 import {
   "moonbitlang/core/json",
   "moonbitlang/async/js_async",
+  "moonbitlang/async",
 }
 
 supported_targets = "js"

@@ -1,31 +1,43 @@
 # mcpconftest
 
-**Pure MoonBit MCP protocol conformance test suite + CLI** — probe any stdio MCP server against the `2026-07-28` protocol spec.
+MCP protocol conformance probe — checks any MCP server (stdio or WebSocket) against the spec.
 
-## What it does
+## Usage
 
-`mcpconftest` spawns a target MCP server as a child process, speaks JSON-RPC over stdio, and runs a battery of conformance checks:
+```bash
+# Run against built-in fixture (default)
+moon run cmd -- run
 
-| # | Check category | What it verifies |
-|---|---|---|
-| 1 | **Initialize handshake** | `jsonrpc: "2.0"`, `serverInfo`, `protocolVersion` match |
-| 2 | **Capabilities** | `tools` capability declared when tools are present |
-| 3 | **tools/list schema** | Every tool has `name` + `description` |
-| 4 | **tools/call error path** | Non-existent tool returns proper JSON-RPC error code |
-| 5 | **Notifications** | Unknown notifications don't crash the server |
-| 6 | **Idempotency** | Repeated `tools/list` returns stable results |
+# Probe one or more servers in parallel
+moon run cmd -- run --server "node my-mcp-server.js" --server "python server.py"
 
-Output: JSON report + optional Markdown summary + CI gate (exit code 0 = pass, 1 = any fail).
+# Probe a WebSocket MCP server
+moon run cmd -- run --server "ws://localhost:3000/mcp"
 
-## Reports (v0.5)
+# Write reports to custom directory (default ./mcpconftest-report, "" disables)
+moon run cmd -- run --server "node server.js" --report ./my-report
+
+# Include JUnit XML output
+moon run cmd -- run --junit
+
+# List available check categories
+moon run cmd -- list-checks
+
+# Print version
+moon run cmd -- version
+```
+
+Output: JSON + Markdown + HTML reports + optional JUnit XML + CI gate (exit code 0 = pass, 1 = any fail).
+
+## Reports
 
 Every run writes to the report directory:
-- `report.json` — machine-readable CI artifact (per-check results + summary counts)
-- `report.md` — human-readable summary table + details
-- `report.html` — standalone styled page (collapsible per-check details)
-- `report-junit.xml` — JUnit XML, only with `--junit` (CI-native test results)
+- `report.json` — machine-readable CI artifact (per-check results + summary + timing)
+- `report.md` — human-readable summary + details + per-check timing
+- `report.html` — standalone styled page (collapsible details)
+- `report-junit.xml` — JUnit XML, only with `--junit` (CI-native)
 
-### Check categories (v0.5)
+## Check categories (v0.6)
 
 - **initialize** — jsonrpc, server_info, protocol_version
 - **capabilities** — response structure
@@ -35,32 +47,44 @@ Every run writes to the report directory:
 - **idempotency** — repeated identical requests
 - **resources/list, resources/read** — resource schema + error path
 - **prompts/list** — prompt schema (name mandatory)
-- **ping, keepalive** — spec-mandated ping response + session stability
-- **protocol negotiation** — matrix across versions 2026-07-28 / 2025-06-18 / 2025-03-26 / 1999-01-01
+- **ping, keepalive** — spec-mandated ping + session stability
+- **protocol negotiation** — version matrix (4 protocols)
+- **logging/setLevel** — logging capability
+- **completion/complete** — prompt completion
+- **resources/subscribe** — subscription capability
+- **sampling/createMessage** — sampling capability
 
-### Multi-server parallel probe
+## Transport support
+
+- **stdio** (default) — spawn child process, JSON-RPC over stdin/stdout
+- **WebSocket** — connect to `ws://` or `wss://`, JSON-RPC over messages
+
+## Performance benchmark
+
+Each check reports individual `timing_ms`. Summary includes `total_timing_ms` and `avg_timing_ms` across all checks.
+
+## Multi-server parallel probe
 
 ```bash
-moon run cmd/e2e -- --server "mcp-server-A" --server "mcp-server-B" --report ./report --junit
+moon run cmd -- run --server "mcp-server-A" --server "mcp-server-B" --report ./report --junit
 ```
+
+All servers probed in parallel via `@async.all`. Aggregated report written once.
 
 Report writing is an observation surface — it never changes the exit verdict.
 
-## Quick start
+## CI gate
 
 ```bash
-# E2E against the built-in partially-compliant fixture (strict expectations)
-moon run cmd/e2e
-
-# Probe an arbitrary MCP server
-moon run cmd/e2e -- --server "node path/to/your-mcp-server.js serve"
-
-# CI gate (moon check + moon test + e2e fixture, all must pass)
 bash scripts/ci.sh
-
-# Reports land in ./mcpconftest-report/ (report.json + report.md)
-# Customize: moon run cmd/e2e -- --report ./my-report   ("" disables)
 ```
+
+Three gates: `moon check` + `moon test` + e2e fixture regression. All must pass.
+
+## CI integration
+
+- `.github/workflows/ci.yml` — GitHub Actions
+- `.gitcode/workflows/ci.yml` — GitCode Actions
 
 ## Project layout
 
@@ -68,23 +92,15 @@ bash scripts/ci.sh
 src/lib/
   types.mbt       — CheckResult / Report types + constructors
   types_test.mbt  — in-package unit tests
-  session.mbt     — real stdio JSON-RPC session driver (child_process.spawn + async FFI)
-  checks.mbt      — six conformance check categories
-  report.mbt      — report rendering (JSON / Markdown) + build_report
-cmd/e2e/main.mbt  — e2e entry: fixture regression + --server probing
+  session.mbt     — stdio + WebSocket JSON-RPC session driver
+  checks.mbt      — 14 conformance check categories
+  report.mbt      — JSON / Markdown / HTML / JUnit rendering
+  probe.mbt       — probe orchestration (fixture + target + parallel)
+cmd/main.mbt      — CLI entry: run / list-checks / version
 tests/fixtures/   — deliberately partially-compliant MCP server (node)
-scripts/ci.sh     — CI gate script
-docs/
-  session-arch.md — transport design notes
-  fist-mbt-probe.md — real-server probe findings
+scripts/ci.sh     — CI gate
 ```
-
-## Why MoonBit?
-
-- The MoonBit ecosystem has an MCP *SDK* (`colmugx/mcp`) but **no conformance suite** — a gap this project fills.
-- MoonBit's `js+native` target means one codebase runs natively and in browsers.
-- The spec is small enough that a single-pass conformance probe fits in a few hundred lines.
 
 ## License
 
-Apache-2.0
+MIT
