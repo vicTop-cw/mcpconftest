@@ -1,7 +1,23 @@
 import {
   "moonbitlang/core/json",
-  "moonbitlang/async/js_async",
+  "moonbitlang/core/env",
+  "moonbitlang/core/ref",
   "moonbitlang/async",
+  "moonbitlang/async/js_async",
+  "moonbitlang/async/io",
+  "moonbitlang/async/process",
+  "moonbitlang/x/fs",
+  "colmugx/mcp" @mcp,
+  "colmugx/mcp/protocol/types" @mcp_types,
 }
 
-supported_targets = "js"
+supported_targets = "js+native"
+
+options(targets: {
+  "probe_io_js.mbt": ["js"],
+  "probe_io_native.mbt": ["native"],
+  "session_io_js.mbt": ["js"],
+  "session_io_native.mbt": ["native"],
+  "report_fs_js.mbt": ["js"],
+  "report_fs_native.mbt": ["native"],
+})

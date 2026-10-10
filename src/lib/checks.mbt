@@ -1,4 +1,4 @@
-///| Six categories of MCP protocol conformance checks.
+﻿///| Six categories of MCP protocol conformance checks.
 
 ///| Parse a JSON-RPC response string, push a Fail on error.
 fn parse_resp(resp_str : String, label : String, results : Array[CheckResult]) -> Option[Json] {
@@ -569,6 +569,249 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
       }
     }
     Err(e) => results.push(CheckResult::skip("sampling.unreachable", e))
+  }
+  results
+}
+
+// ---------------------------------------------------------------------------
+// JSON-RPC 2.0 deep checks (batch / id matching / error schema)
+// ---------------------------------------------------------------------------
+
+///| Pure validation: a JSON-RPC error response must satisfy the JSON-RPC 2.0
+///| error schema. Pushes individual pass/fail findings onto results.
+pub fn validate_error_object(resp : Json, e : Map[String, Json], label : String, results : Array[CheckResult]) -> Unit {
+  // jsonrpc must be "2.0"
+  match resp.value("jsonrpc") {
+    Some(Json::String(s)) if s == "2.0" =>
+      results.push(CheckResult::pass(label + ".jsonrpc", "error response jsonrpc=2.0"))
+    _ =>
+      results.push(CheckResult::fail(label + ".jsonrpc", "error response jsonrpc != \"2.0\"", resp.stringify()))
+  }
+  // result and error are mutually exclusive
+  let has_result = resp.value("result") is Some(_)
+  let has_error = resp.value("error") is Some(_)
+  if has_result && has_error {
+    results.push(CheckResult::fail(label + ".exclusive", "response contains both result and error", resp.stringify()))
+  } else {
+    results.push(CheckResult::pass(label + ".exclusive", "result and error are mutually exclusive"))
+  }
+  // error.code must be an integer within the reserved range -32768..-32000
+  match e.get("code") {
+    Some(Json::Number(n, ..)) => {
+      let code = n.to_int()
+      if n != code.to_double() {
+        results.push(CheckResult::fail(label + ".code", "error.code is not an integer", resp.stringify()))
+      } else if code >= -32768 && code <= -32000 {
+        results.push(CheckResult::pass(label + ".code", "error.code=\{code} in reserved range -32768..-32000"))
+      } else {
+        results.push(CheckResult::fail(label + ".code", "error.code=\{code} outside reserved range -32768..-32000", resp.stringify()))
+      }
+    }
+    _ => results.push(CheckResult::fail(label + ".code", "error.code missing or not a number", resp.stringify()))
+  }
+  // error.message must be a non-empty string
+  match e.get("message") {
+    Some(Json::String(m)) if m.length() > 0 =>
+      results.push(CheckResult::pass(label + ".message", "error.message is a non-empty string"))
+    Some(Json::String(_)) =>
+      results.push(CheckResult::fail(label + ".message", "error.message is an empty string", resp.stringify()))
+    _ =>
+      results.push(CheckResult::fail(label + ".message", "error.message missing or not a string", resp.stringify()))
+  }
+  // error.data is optional (present or omitted both acceptable)
+  match e.get("data") {
+    Some(_) => results.push(CheckResult::pass(label + ".data", "error.data present (optional field, accepted)"))
+    None => results.push(CheckResult::pass(label + ".data", "error.data omitted (optional field)"))
+  }
+}
+
+///| Pure validation: a response id must equal the request id exactly
+///| (type + value).
+pub fn validate_id_match(resp : Json, req_id : Json, label : String, results : Array[CheckResult]) -> Unit {
+  match resp.value("id") {
+    Some(id) if id == req_id =>
+      results.push(CheckResult::pass(label + ".id", "response id \{req_id.stringify()} matches request id"))
+    Some(id) =>
+      results.push(CheckResult::fail(label + ".id", "response id \{id.stringify()} != request id \{req_id.stringify()}", resp.stringify()))
+    None =>
+      results.push(CheckResult::fail(label + ".id", "response missing id", resp.stringify()))
+  }
+}
+
+///| Pure validation: a batch response must be an array; its item count must
+///| match the request count; every request id must have a response item; error
+///| items must carry a valid error object.
+pub fn validate_batch_resp(
+  resp : Json,
+  req_ids : Array[Json],
+  err_req_ids : Array[Json],
+  results : Array[CheckResult],
+) -> Unit {
+  match resp {
+    Json::Array(items) => {
+      results.push(CheckResult::pass("batch.array", "batch response is an array"))
+      if items.length() != req_ids.length() {
+        results.push(CheckResult::fail("batch.count", "expected \{req_ids.length()} response items, got \{items.length()}", resp.stringify()))
+      } else {
+        results.push(CheckResult::pass("batch.count", "response item count matches request count (\{req_ids.length()})"))
+      }
+      for req_id in req_ids {
+        var found = false
+        for item in items {
+          match item.value("id") {
+            Some(id) => if id == req_id { found = true }
+            None => ()
+          }
+        }
+        if found {
+          results.push(CheckResult::pass("batch.id_match", "request id \{req_id.stringify()} has a matching response item"))
+        } else {
+          results.push(CheckResult::fail("batch.id_match", "no response item for request id \{req_id.stringify()}", resp.stringify()))
+        }
+      }
+      for req_id in err_req_ids {
+        var item_opt : Option[Json] = None
+        for item in items {
+          match item.value("id") {
+            Some(id) if id == req_id => item_opt = Some(item)
+            _ => ()
+          }
+        }
+        match item_opt {
+          Some(item) =>
+            match item.value("error") {
+              Some(Json::Object(_)) =>
+                results.push(CheckResult::pass("batch.error_schema", "error item for \{req_id.stringify()} carries a valid error object"))
+              Some(_) =>
+                results.push(CheckResult::fail("batch.error_schema", "error item for \{req_id.stringify()} has a non-object error", item.stringify()))
+              None =>
+                results.push(CheckResult::fail("batch.error_schema", "expected error for \{req_id.stringify()}, got none", item.stringify()))
+            }
+          None =>
+            results.push(CheckResult::fail("batch.error_schema", "no response item for error request \{req_id.stringify()}", resp.stringify()))
+        }
+      }
+    }
+    _ => results.push(CheckResult::fail("batch.not_array", "batch response is not an array", resp.stringify()))
+  }
+}
+
+///| JSON-RPC batch check: send a batch array request with 2~3 distinct ids and
+///| verify the response is an array, item count matches, every response id
+///| matches the request id, and error items carry a valid error object.
+pub async fn check_batch(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let reqs = Json::array([
+    Json::object({
+      "jsonrpc": Json::string("2.0"),
+      "id": Json::number(1.0),
+      "method": Json::string("tools/list"),
+      "params": Json::object({}),
+    }),
+    Json::object({
+      "jsonrpc": Json::string("2.0"),
+      "id": Json::number(42.0),
+      "method": Json::string("tools/call"),
+      "params": Json::object({ "name": Json::string("echo"), "arguments": Json::object({ "text": Json::string("hi") }) }),
+    }),
+    Json::object({
+      "jsonrpc": Json::string("2.0"),
+      "id": Json::string("req-batch-err"),
+      "method": Json::string("unknown/method"),
+      "params": Json::object({}),
+    }),
+  ])
+  let req_ids : Array[Json] = [Json::number(1.0), Json::number(42.0), Json::string("req-batch-err")]
+  let err_req_ids : Array[Json] = [Json::string("req-batch-err")]
+  match session.request_raw(reqs.stringify(), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("batch.parse", "JSON parse error", resp_str))
+      } else {
+        validate_batch_resp(j, req_ids, err_req_ids, results)
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("batch.timeout", e, ""))
+  }
+  results
+}
+
+///| JSON-RPC id matching check: number ids (1, 42) and string ids ("req-1",
+///| special chars) must be echoed back exactly (type + value).
+pub async fn check_id_matching(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let ids = [
+    Json::number(1.0),
+    Json::number(42.0),
+    Json::string("req-1"),
+    Json::string("req a#b&é"),
+  ]
+  let n = ids.length()
+  let mut i = 0
+  while i < n {
+    let id = ids[i]
+    let req = Json::object({
+      "jsonrpc": Json::string("2.0"),
+      "id": id,
+      "method": Json::string("tools/list"),
+      "params": Json::object({}),
+    })
+    let label = "id_match.\{i}"
+    match session.request_raw(req.stringify(), 5000) {
+      Ok(resp_str) => {
+        let j = @json.parse(resp_str) catch { _ => Json::null() }
+        if j is Json::Null {
+          results.push(CheckResult::fail(label + ".parse", "JSON parse error", resp_str))
+        } else {
+          validate_id_match(j, id, label, results)
+        }
+      }
+      Err(e) => results.push(CheckResult::fail(label + ".timeout", e, ""))
+    }
+    i = i + 1
+  }
+  results
+}
+
+///| JSON-RPC 2.0 error schema check: trigger an error (unknown method) and
+///| deeply validate the error object (code range, message, data optional,
+///| result/error exclusivity, jsonrpc=2.0).
+pub async fn check_error_schema(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let req = Json::object({
+    "jsonrpc": Json::string("2.0"),
+    "id": Json::number(7.0),
+    "method": Json::string("unknown/method"),
+    "params": Json::object({}),
+  })
+  match session.request_raw(req.stringify(), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("error_schema.parse", "JSON parse error", resp_str))
+        return results
+      }
+      match j {
+        Json::Object(_) => {
+          let has_result = j.value("result") is Some(_)
+          let has_error = j.value("error") is Some(_)
+          if has_error {
+            match j.value("error") {
+              Some(Json::Object(e)) => validate_error_object(j, e, "error_schema", results)
+              Some(_) => results.push(CheckResult::fail("error_schema.shape", "error is not an object", resp_str))
+              None => ()
+            }
+          } else if has_result {
+            results.push(CheckResult::fail("error_schema.no_error", "expected an error response, got result only", resp_str))
+          } else {
+            results.push(CheckResult::fail("error_schema.no_error", "response has neither result nor error", resp_str))
+          }
+        }
+        _ => results.push(CheckResult::fail("error_schema.shape", "error response is not an object", resp_str))
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("error_schema.timeout", e, ""))
   }
   results
 }

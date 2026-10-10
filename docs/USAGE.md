@@ -5,14 +5,27 @@ Complete usage documentation with real output examples.
 ## Installation
 
 ```bash
-# From mooncakes.io (MoonBit community package registry)
-moon add vicTop-cw/mcpconftest
+# 一行命令安装并注册（Windows PowerShell）
+iex ((irm https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/blackbox/install_onecmd.ps1).ToString().TrimStart([char]0xFEFF))
+#    Linux / WSL
+# curl -fsSL https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/blackbox/install.sh | bash
+
+# 本地 / 离线（发布前自证推荐）：见 docs/INSTALL.md（release_zip.ps1 + -LocalZip）
+```
+
+开发 / 源码直跑：
+
+```bash
+moon add vicTop-cw/mcpconftest   # mooncakes.io 注册表
+moon run cmd -- run              # = mcpconftest run
 ```
 
 ## Quick start
 
 ```bash
-# Run against built-in fixture (no external server needed)
+# 安装后直接可用；内建 fixture（无需外部 server）
+mcpconftest run --fixture
+# 开发态等价
 moon run cmd -- run
 ```
 
@@ -46,8 +59,20 @@ moon run cmd -- list-checks
 ### `version` — Print version
 
 ```bash
-moon run cmd -- version
+mcpconftest version
+# 开发态：moon run cmd -- version
 ```
+
+### `serve` — Run as an MCP server
+
+```bash
+mcpconftest serve
+```
+
+按 2026-07-28 无状态 MCP 协议以 stdio 传输启动，暴露三个工具：
+`version`（版本）、`run_probe`（对指定 MCP server 做合规探测，参数 `servers` /
+`report_dir` / `junit`）、`list_checks`（检查类别清单）。任何 stdio MCP 客户端
+可直接拉起；重复 initialize 按无状态协议返回 -32601。
 
 ## Probe your own server
 
@@ -187,6 +212,19 @@ All servers probed in parallel via `@async.all`. Aggregated report written once.
 |---|---|---|
 | stdio | `--server "node server.js"` | Local MCP servers |
 | WebSocket | `--server "ws://host:port/path"` | Remote MCP servers |
+
+## Backends
+
+安装器分发 JS 后端（Node ≥18，推荐 22+）；native 后端源码构建：
+
+```bash
+moon build --target native --release
+# Windows: _build/native/release/build/cmd/cmd.exe
+# Linux:   _build/native/release/build/cmd/cmd
+```
+
+`src/lib` 为 `js+native` 双 target；native 下 stdio 探测经 spawn 子进程真实工作
+（WS 不可用时返回 -1 哨兵降级为跳过）。
 
 ## Troubleshooting
 

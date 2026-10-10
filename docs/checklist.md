@@ -84,6 +84,20 @@ Based on MCP protocol spec `2026-07-28` and JSON-RPC 2.0.
 
 - [x] `sampling/createMessage` returns `content.text` or skipped
 
+## Category 15 — JSON-RPC 2.0 Deep
+
+- [x] Batch array request returns a response array
+- [x] Batch response item count matches request count
+- [x] Every batch response item id matches the request id exactly
+- [x] Batch error items carry a valid error object
+- [x] Number ids (1, 42) echoed back with matching type + value
+- [x] String ids (`req-1`, special chars) echoed back with matching type + value
+- [x] `error.code` is an integer in `-32768..-32000` (reserved range)
+- [x] `error.message` is a non-empty string
+- [x] `error.data` is optional
+- [x] `result` and `error` are mutually exclusive in one response
+- [x] Error response carries `jsonrpc: "2.0"`
+
 ---
 
 ## Implementation Status (v0.6)
@@ -104,5 +118,6 @@ Based on MCP protocol spec `2026-07-28` and JSON-RPC 2.0.
 | 12. Completion | ✅ Implemented |
 | 13. Subscription | ✅ Implemented |
 | 14. Sampling | ✅ Implemented |
+| 15. JSON-RPC 2.0 Deep | ✅ Implemented |
 
-All 14 categories implemented with real stdio + WebSocket transport.
+All 15 categories implemented with real stdio + WebSocket transport.

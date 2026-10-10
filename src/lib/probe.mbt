@@ -15,9 +15,9 @@ pub fn push_all(results : Array[CheckResult], items : Array[CheckResult]) -> Uni
 async fn timed_check(
   f : async () -> Array[CheckResult],
 ) -> Array[CheckResult] {
-  let start = js_now_ms()
+  let start = now_ms()
   let results = f()
-  let elapsed = js_now_ms() - start
+  let elapsed = now_ms() - start
   for r in results {
     r.timing_ms = elapsed
   }
@@ -95,6 +95,15 @@ pub async fn run_fixture() -> ProbeRun {
   push_all(results, r15)
   let r16 = timed_check(async fn() { check_sampling(session) })
   push_all(results, r16)
+  let r17 = timed_check(async fn() { check_batch(session) })
+  push_all(results, r17)
+  if count(r17, "pass") < 3 { ok = false }
+  let r18 = timed_check(async fn() { check_id_matching(session) })
+  push_all(results, r18)
+  if count(r18, "pass") < 4 { ok = false }
+  let r19 = timed_check(async fn() { check_error_schema(session) })
+  push_all(results, r19)
+  if count(r19, "fail") > 0 { ok = false }
   ignore(session.close())
   println("[fixture] \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail")
   { ok, results, cmd }
@@ -146,6 +155,15 @@ pub async fn probe_server(cmd : String) -> ProbeRun {
   push_all(results, r15)
   let r16 = timed_check(async fn() { check_sampling(session) })
   push_all(results, r16)
+  let r17 = timed_check(async fn() { check_batch(session) })
+  push_all(results, r17)
+  if count_err(r17) > 0 { ok = false }
+  let r18 = timed_check(async fn() { check_id_matching(session) })
+  push_all(results, r18)
+  if count_err(r18) > 0 { ok = false }
+  let r19 = timed_check(async fn() { check_error_schema(session) })
+  push_all(results, r19)
+  if count_err(r19) > 0 { ok = false }
   ignore(session.close())
   println("[target] \{cmd}: \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail, \{count_err(results)} err")
   { ok, results, cmd }
@@ -158,7 +176,7 @@ pub async fn run_probe(
   report_dir : String,
   junit : Bool,
 ) -> (Bool, Array[CheckResult], String) {
-  let probe_start = js_now_ms()
+  let probe_start = now_ms()
   let runs : Array[ProbeRun] = if servers.length() > 0 {
     println("probing \{servers.length()} server(s) in parallel")
     let tasks : Array[async () -> ProbeRun] = servers.map(fn(cmd) {
@@ -175,14 +193,14 @@ pub async fn run_probe(
     if !run.ok { all_ok = false }
     for r in run.results { all_results.push(r) }
   }
-  let total_timing = js_now_ms() - probe_start
+  let total_timing = now_ms() - probe_start
   let server_label = if servers.length() > 0 {
     servers.join(", ")
   } else {
     "fixture"
   }
   if report_dir.length() > 0 {
-    let report = build_report(all_results, server_label, "2026-07-28", js_now_iso())
+    let report = build_report(all_results, server_label, "2026-07-28", now_iso())
     report.total_timing_ms = total_timing
     report.avg_timing_ms = if all_results.length() > 0 { total_timing / all_results.length() } else { 0 }
     match report.write_to_dir(report_dir, junit) {
@@ -192,7 +210,3 @@ pub async fn run_probe(
   }
   (all_ok, all_results, server_label)
 }
-
-///| Current UTC time as ISO string (js target).
-extern "js" fn js_now_iso() -> String =
-  #| () => new Date().toISOString()

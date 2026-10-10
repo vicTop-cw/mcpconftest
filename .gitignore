@@ -5,3 +5,6 @@ _build/
 fist-mbt.db*
 mcpconftest-report/
 docs/申报书.md
+
+_release/
+

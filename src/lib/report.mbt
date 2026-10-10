@@ -227,27 +227,3 @@ pub fn Report::write_to_dir(self : Report, dir : String, with_junit : Bool) -> R
   }
   Ok(())
 }
-
-///| mkdir -p (js target, sync).
-extern "js" fn fs_mkdir_p(dir : String) -> Int =
-  #| (dir) => {
-  #|   try {
-  #|     const fs = process.getBuiltinModule('node:fs')
-  #|     fs.mkdirSync(dir, { recursive: true })
-  #|     return 0
-  #|   } catch (e) {
-  #|     return -1
-  #|   }
-  #| }
-
-///| write file (js target, sync).
-extern "js" fn fs_write_file(path : String, content : String) -> Int =
-  #| (path, content) => {
-  #|   try {
-  #|     const fs = process.getBuiltinModule('node:fs')
-  #|     fs.writeFileSync(path, content, 'utf8')
-  #|     return 0
-  #|   } catch (e) {
-  #|     return -1
-  #|   }
-  #| }

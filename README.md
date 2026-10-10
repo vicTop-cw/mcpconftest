@@ -5,15 +5,30 @@ MCP protocol conformance probe — checks any MCP server (stdio or WebSocket) ag
 ## Quick start
 
 ```bash
-# 1. Install (from mooncakes.io)
-moon add vicTop-cw/mcpconftest
+# 1. 一行命令安装并注册（Windows PowerShell）
+iex ((irm https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/blackbox/install_onecmd.ps1).ToString().TrimStart([char]0xFEFF))
+#    Linux / WSL
+# curl -fsSL https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/blackbox/install.sh | bash
 
-# 2. Run against built-in fixture (no external server needed)
-moon run cmd -- run
+# 2. 探测内建 fixture（无需外部 server；35/47 pass, 8 fail 为预期违规）
+mcpconftest run --fixture
 
-# 3. Check the report
+# 3. 查报告
 cat mcpconftest-report/report.md
+
+# 4. 以 MCP server 形态启动（stdio，暴露 version / run_probe / list_checks）
+mcpconftest serve
 ```
+
+开发 / 源码直跑：
+
+```bash
+moon add vicTop-cw/mcpconftest   # 或直接克隆本仓库
+moon run cmd -- run              # = mcpconftest run
+moon run cmd -- serve            # = mcpconftest serve
+```
+
+详见 [docs/INSTALL.md](docs/INSTALL.md)（一行安装注册全指南）与 [docs/USAGE.md](docs/USAGE.md)。
 
 ## Demo output
 
@@ -70,27 +85,33 @@ Exit code: `0` (ALL GREEN) — fixture is *expected* to have failures; the probe
 ## Usage
 
 ```bash
-# Probe your own MCP server (stdio)
-moon run cmd -- run --server "node my-mcp-server.js"
-
-# Probe multiple servers in parallel
-moon run cmd -- run --server "mcp-server-A" --server "mcp-server-B"
-
-# Probe a WebSocket MCP server
-moon run cmd -- run --server "ws://localhost:3000/mcp"
-
-# Custom report directory (default ./mcpconftest-report, "" disables)
-moon run cmd -- run --server "node server.js" --report ./my-report
-
-# Include JUnit XML (CI-native)
-moon run cmd -- run --junit
-
-# List check categories
-moon run cmd -- list-checks
-
-# Print version
-moon run cmd -- version
+# CLI 四子命令（安装后直接 `mcpconftest`；开发态等价 `moon run cmd --`）
+mcpconftest version        # mcpconftest v0.7.0
+mcpconftest list-checks    # 列出全部检查类别
+mcpconftest run --server "node my-mcp-server.js"          # 探测指定 MCP server（stdio）
+mcpconftest run --server "mcp-server-A" --server "mcp-server-B"   # 多 server 并行
+mcpconftest run --server "ws://localhost:3000/mcp"        # WebSocket 传输
+mcpconftest run --server "node server.js" --report ./my-report   # 自定义报告目录
+mcpconftest run --server "node server.js" --junit         # 附 JUnit XML
+mcpconftest run --fixture                                 # 内建 fixture 自检
+mcpconftest serve                                         # MCP server 形态（stdio）
 ```
+
+## MCP 化（库即 MCP server）
+
+`mcpconftest serve` 以无状态 MCP server（2026-07-28 协议）暴露三个工具：
+`version` / `run_probe`（参数：servers、report_dir、junit）/ `list_checks`。
+任何支持 stdio MCP 的客户端可直接拉起 `mcpconftest serve`。
+
+## 双后端
+
+| 后端 | 产物 | 来源 |
+|---|---|---|
+| JS | `mcpconftest.js`（Node ≥18） | 安装器分发的发行资产（`mcpconftest-js-v<版本>.zip`） |
+| native | `cmd.exe` / `cmd` | `moon build --target native --release` |
+
+`src/lib` 配置 `supported_targets = "js+native"`，两后端共享同一 CLI / MCP 逻辑；
+native 后端 stdio 探测通过 spawn 子进程真实工作。
 
 ## Reports
 
@@ -156,12 +177,22 @@ src/lib/
   types.mbt       — CheckResult / Report types + constructors
   types_test.mbt  — in-package unit tests
   session.mbt     — stdio + WebSocket JSON-RPC session driver
+  session_io_js.mbt   — JS 后端 stdio 抽象实现（inline extern）
+  session_io_native.mbt — native 后端实现（spawn 子进程，真实 stdio）
   checks.mbt      — 14 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)
-cmd/main.mbt      — CLI entry: run / list-checks / version
+  server.mbt      — MCP server（serve：version / run_probe / list_checks）
+cmd/main.mbt      — CLI entry: run / list-checks / version / serve
 tests/fixtures/   — deliberately partially-compliant MCP server (node)
 scripts/ci.sh     — CI gate
+scripts/blackbox/
+  install_onecmd.ps1  — Windows 一行命令安装注册（shim + PATH）
+  install.sh          — Linux/WSL 一行命令安装注册
+  release_zip.ps1     — Windows 打包 JS 发行资产
+  release_zip.sh      — Linux 打包 JS 发行资产
+docs/INSTALL.md     — 安装注册全指南
+docs/USAGE.md       — 完整用法
 ```
 
 ## License

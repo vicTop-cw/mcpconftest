@@ -1,9 +1,25 @@
 import {
   "vicTop-cw/mcpconftest/src/lib",
+  "colmugx/mcp" @mcp,
+  "colmugx/mcp/protocol/types" @mcp_types,
   "moonbitlang/async",
+  "moonbitlang/async/io",
+  "moonbitlang/async/js_async",
   "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/x/sys",
 }
 
 pkgtype(kind: "executable")
 
 supported_targets = "js+native"
+
+// serve_io_js/serve_io_native 使用 io/js_async 等仅在各自 target 生效；
+// json 在 native 测试端不需要，统一压制 unused_package。
+
+warnings = "-6-35"
+
+options(targets: {
+  "serve_io_js.mbt": ["js"],
+  "serve_io_native.mbt": ["native"],
+})
