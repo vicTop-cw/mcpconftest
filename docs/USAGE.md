@@ -187,6 +187,11 @@ Runs three gates:
 | 12 | completion/complete | prompt completion |
 | 13 | resources/subscribe | subscription capability |
 | 14 | sampling/createMessage | sampling capability |
+| 15 | batch | JSON-RPC batch request handling |
+| 16 | id_matching | JSON-RPC id matching between request and response |
+| 17 | error_schema | Error response schema conformance (code/message) |
+| 18 | resources_read_error | resources/read error path (-32602 / missing resource) |
+| 19 | notifications_initialized | initialized notification handling |
 
 ## Performance benchmark
 

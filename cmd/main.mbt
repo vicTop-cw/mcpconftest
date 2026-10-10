@@ -17,6 +17,15 @@ fn list_checks() -> Unit {
     "prompts/list — prompt schema (name mandatory)",
     "ping, keepalive — spec-mandated ping + session stability",
     "protocol negotiation — version matrix (4 protocols)",
+    "logging/setLevel — logging capability",
+    "completion/complete — prompt completion",
+    "resources/subscribe — subscription capability",
+    "sampling/createMessage — sampling capability",
+    "batch — JSON-RPC batch request handling",
+    "id_matching — JSON-RPC id matching between request and response",
+    "error_schema — Error response schema conformance (code/message)",
+    "resources_read_error — resources/read error path (-32602 / missing resource)",
+    "notifications_initialized — initialized notification handling",
   ]
   println("mcpconftest check categories:")
   for c in checks {

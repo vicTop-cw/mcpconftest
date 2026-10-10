@@ -1,13 +1,13 @@
 ///| MCP server builder — exposes mcpconftest as an MCP stdio server.
 ///| Registers three tools:
 ///|   - run_probe: run the conformance probe against one or more servers
-///|   - list_checks: list the 15 conformance check categories
+///|   - list_checks: list the 19 conformance check categories
 ///|   - version: report the server version
 ///|
 ///| The returned `@mcp.MCPServer` is driven by the target-specific stdio
 ///| loop in `cmd/serve_io_js.mbt` / `cmd/serve_io_native.mbt`.
 
-///| Metadata for the 15 conformance check categories exposed by list_checks.
+///| Metadata for the 19 conformance check categories exposed by list_checks.
 ///| Extracted from the check functions in checks.mbt.
 pub fn list_checks_meta() -> Json {
   let items : Array[Json] = []
@@ -42,6 +42,9 @@ pub fn list_checks_meta() -> Json {
       "Version matrix across supported protocol versions",
     ),
     ("logging", "Logging notification support (no crash, optional ack)"),
+    ("completion", "Completion request/response round-trip"),
+    ("subscribe", "resources/subscribe and notifications/resources/updated flow"),
+    ("sampling", "Sampling request handling (createMessage, optional ack)"),
     ("batch", "JSON-RPC batch request handling"),
     ("id_matching", "JSON-RPC id matching between request and response"),
     ("error_schema", "Error response schema conformance (code/message)"),

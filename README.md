@@ -122,7 +122,7 @@ Every run writes to the report directory:
 - `report.html` — standalone styled page (collapsible details)
 - `report-junit.xml` — JUnit XML, only with `--junit` (CI-native)
 
-## Check categories (v0.6)
+## Check categories (v0.8)
 
 - **initialize** — jsonrpc, server_info, protocol_version
 - **capabilities** — response structure
@@ -138,6 +138,9 @@ Every run writes to the report directory:
 - **completion/complete** — prompt completion
 - **resources/subscribe** — subscription capability
 - **sampling/createMessage** — sampling capability
+- **batch** — JSON-RPC batch request handling
+- **id_matching** — JSON-RPC id matching between request and response
+- **error_schema** — Error response schema conformance (code/message)
 
 ## Transport support
 
@@ -180,7 +183,7 @@ src/lib/
   session.mbt     — stdio + WebSocket JSON-RPC session driver
   session_io_js.mbt   — JS 后端 stdio 抽象实现（inline extern）
   session_io_native.mbt — native 后端实现（spawn 子进程真实 stdio + async/websocket 真实 WS）
-  checks.mbt      — 14 conformance check categories
+  checks.mbt      — 19 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)
   server.mbt      — MCP server（serve：version / run_probe / list_checks）
