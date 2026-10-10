@@ -114,26 +114,81 @@ pub async fn io_close(handle_id : Int) -> Int {
   }
 }
 
-///| Connect a WebSocket MCP session.
-///| Native stub: returns -1 (WS transport not supported on native yet).
-pub async fn io_ws_connect(_url : String) -> Int {
-  -1
+///| A live native WebSocket session (moonbitlang/async/websocket client).
+priv struct NativeWsSession {
+  conn : @async_ws.Conn
 }
 
-///| Send a WebSocket message.
-///| Native stub: returns -1.
-pub async fn io_ws_write(_handle_id : Int, _message : String) -> Int {
-  -1
+///| Global WebSocket session table (handle -> session). Grows on demand.
+let ws_sessions : Array[Option[NativeWsSession]] = Array::make(16, None)
+
+fn ws_ensure_capacity(id : Int) -> Unit {
+  while ws_sessions.length() <= id {
+    ws_sessions.push(None)
+  }
 }
 
-///| Read one WebSocket response with timeout.
-///| Native stub: returns `__MCP_ERROR__`.
-pub async fn io_ws_read(_handle_id : Int, _timeout_ms : Int) -> String {
-  "__MCP_ERROR__"
+///| Connect a WebSocket MCP session (native). Returns session handle or -1.
+pub async fn io_ws_connect(url : String) -> Int {
+  let conn = @async_ws.Conn::connect(url) catch {
+    _ => return -1
+  }
+  let id = ws_sessions.length()
+  ws_ensure_capacity(id)
+  ws_sessions.set(id, Some({ conn, }))
+  id
 }
 
-///| Close a WebSocket session.
-///| Native stub: returns -1.
-pub async fn io_ws_close(_handle_id : Int) -> Int {
-  -1
+///| Send a WebSocket message (native). Returns 0 on success, -1 on failure.
+pub async fn io_ws_write(handle_id : Int, message : String) -> Int {
+  match ws_sessions[handle_id] {
+    None => -1
+    Some(s) => {
+      s.conn.send_text(message) catch {
+        _ => return -1
+      }
+      0
+    }
+  }
+}
+
+///| Read one WebSocket response with timeout (native).
+///| Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
+pub async fn io_ws_read(handle_id : Int, timeout_ms : Int) -> String {
+  match ws_sessions[handle_id] {
+    None => "__MCP_ERROR__"
+    Some(s) => {
+      let resp : String = try {
+        @async.with_timeout(timeout_ms, async fn() {
+          let msg = s.conn.recv() catch {
+            _ => return "__MCP_ERROR__"
+          }
+          match msg.kind {
+            @async_ws.Text => {
+              let data = msg.read_all() catch {
+                _ => return "__MCP_ERROR__"
+              }
+              data.text() catch { _ => "__MCP_ERROR__" }
+            }
+            @async_ws.Binary => "__MCP_ERROR__"
+          }
+        })
+      } catch {
+        _ => "__MCP_TIMEOUT__"
+      }
+      resp
+    }
+  }
+}
+
+///| Close a WebSocket session (native). Returns 0 on success, -1 on failure.
+pub async fn io_ws_close(handle_id : Int) -> Int {
+  match ws_sessions[handle_id] {
+    None => -1
+    Some(s) => {
+      s.conn.close()
+      ws_sessions.set(handle_id, None)
+      0
+    }
+  }
 }

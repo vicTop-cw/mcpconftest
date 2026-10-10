@@ -58,8 +58,14 @@ async fn run_fixture() -> ProbeRun {
 }
 
 ///| Probe an arbitrary MCP server (no fixture-specific violation expectations).
+/// ws:// or wss:// targets use the WebSocket transport, others stdio.
 async fn probe_server(cmd : String) -> ProbeRun {
-  let session = @lib.Session::new(cmd)
+  let is_ws = cmd.has_prefix("ws://") || cmd.has_prefix("wss://")
+  let session = if is_ws {
+    @lib.Session::new_ws(cmd)
+  } else {
+    @lib.Session::new(cmd)
+  }
   if !session.alive {
     return { ok: false, results: [] }
   }

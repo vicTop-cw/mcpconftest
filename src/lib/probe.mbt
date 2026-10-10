@@ -110,8 +110,15 @@ pub async fn run_fixture() -> ProbeRun {
 }
 
 ///| Probe an arbitrary MCP server (no fixture-specific violation expectations).
+/// If the target starts with ws:// or wss:// it is treated as a WebSocket URL,
+/// otherwise as a stdio command line.
 pub async fn probe_server(cmd : String) -> ProbeRun {
-  let session = Session::new(cmd)
+  let is_ws = cmd.has_prefix("ws://") || cmd.has_prefix("wss://")
+  let session = if is_ws {
+    Session::new_ws(cmd)
+  } else {
+    Session::new(cmd)
+  }
   if !session.alive {
     return { ok: false, results: [], cmd }
   }

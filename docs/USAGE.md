@@ -223,8 +223,9 @@ moon build --target native --release
 # Linux:   _build/native/release/build/cmd/cmd
 ```
 
-`src/lib` 为 `js+native` 双 target；native 下 stdio 探测经 spawn 子进程真实工作
-（WS 不可用时返回 -1 哨兵降级为跳过）。
+`src/lib` 为 `js+native` 双 target；native 下 stdio 探测经 spawn 子进程真实工作，
+WebSocket 探测经 `moonbitlang/async/websocket` 真实连接（`ws://` / `wss://`，文本帧
+JSON-RPC，超时与关闭语义与 js 后端一致）。
 
 ## Troubleshooting
 

@@ -111,7 +111,8 @@ mcpconftest serve                                         # MCP server 形态（
 | native | `cmd.exe` / `cmd` | `moon build --target native --release` |
 
 `src/lib` 配置 `supported_targets = "js+native"`，两后端共享同一 CLI / MCP 逻辑；
-native 后端 stdio 探测通过 spawn 子进程真实工作。
+native 后端 stdio 探测通过 spawn 子进程真实工作，WebSocket 探测通过
+`moonbitlang/async/websocket` 真实连接（`ws://` / `wss://`）。
 
 ## Reports
 
@@ -178,7 +179,7 @@ src/lib/
   types_test.mbt  — in-package unit tests
   session.mbt     — stdio + WebSocket JSON-RPC session driver
   session_io_js.mbt   — JS 后端 stdio 抽象实现（inline extern）
-  session_io_native.mbt — native 后端实现（spawn 子进程，真实 stdio）
+  session_io_native.mbt — native 后端实现（spawn 子进程真实 stdio + async/websocket 真实 WS）
   checks.mbt      — 14 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)
