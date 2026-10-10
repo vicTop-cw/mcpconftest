@@ -13,7 +13,7 @@ pub fn now_ms() -> Int {
 ///| Current UTC time as an ISO-8601 string with millisecond precision
 ///| (native target), e.g. `2026-10-09T12:34:56.789Z`.
 pub fn now_iso() -> String {
-  let ms : Int64 = @env.now().to_int64()
+  let ms : Int64 = @env.now().reinterpret_as_int64()
   let ms_per_day : Int64 = 86400000L
   let days = ms / ms_per_day
   let day_ms = ms % ms_per_day

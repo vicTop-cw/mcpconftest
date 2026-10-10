@@ -120,7 +120,7 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
     "list_checks",
     "List the conformance check categories that run_probe executes.",
     Json::object({}),
-    async fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+    fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(list_checks_meta().stringify()))
     },
   )
@@ -128,7 +128,7 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
     "version",
     "Report the mcpconftest server version.",
     Json::object({}),
-    async fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+    fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(Json::string(version()).stringify()))
     },
   )

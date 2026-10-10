@@ -4,5 +4,5 @@
 
 ///| Current mcpconftest version string.
 pub fn version() -> String {
-  "0.7.0"
+  "0.7.1"
 }

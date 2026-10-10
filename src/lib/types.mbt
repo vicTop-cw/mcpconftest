@@ -8,6 +8,9 @@ pub(all) enum Severity {
   Warn
 } derive(Eq, Debug)
 
+pub extend Severity with Eq::{not_equal, equal}
+pub extend Severity with @moonbitlang/core/debug.Debug::{to_repr}
+
 ///| A single check result.
 pub(all) struct CheckResult {
   mut name : String

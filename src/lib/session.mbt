@@ -25,7 +25,7 @@ pub async fn Session::new(cmd : String) -> Session {
   let parts = cmd.split(" ")
   let argv : Array[String] = []
   for p in parts {
-    argv.push(p.to_string())
+    argv.push(p.to_owned())
   }
   let handle_id = io_spawn(argv, ".") catch { _ => -1 }
   { next_id: 1, alive: handle_id >= 0, handle_id, transport: Stdio }

@@ -1,6 +1,7 @@
 import {
   "vicTop-cw/mcpconftest/src/lib",
   "moonbitlang/async",
+  "moonbitlang/core/env",
 }
 
 pkgtype(kind: "executable")

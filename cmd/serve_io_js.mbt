@@ -58,7 +58,7 @@ async fn run_stdio_target(s1 : @mcp.MCPServer) -> Unit {
     match line_opt {
       None => break
       Some(line) => {
-        let msg = line.trim().to_string()
+        let msg = line.trim().to_owned()
         if msg.is_empty() {
           continue
         }

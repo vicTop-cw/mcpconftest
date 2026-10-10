@@ -15,7 +15,7 @@
 /// does not support the WS transport yet, matching the js FFI sentinel contract.
 
 ///| A live native stdio child session.
-struct NativeSession {
+priv struct NativeSession {
   reader : @process.ReadFromProcess
   raw_writer : @process.WriteToProcess
   writer : @io.BufferedWriter[@process.WriteToProcess]
@@ -45,7 +45,7 @@ pub async fn io_spawn(argv : Array[String], workdir : String) -> Int {
     _ => return -1
   }
   errdefer stdout_reader.close()
-  let pid = @process.spawn_orphan(
+  let _ = @process.spawn_orphan(
     cmd,
     args,
     stdin=stdin_input,

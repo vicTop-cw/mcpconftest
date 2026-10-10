@@ -1,0 +1,1 @@
+T1(立即): 提交工作区 warning 清理修改（15 文件）并发布 0.7.1 patch。T2: 补 native WebSocket 真实实现（当前 native 后端 WS 可能为占位）。T3: 扩充 checks 覆盖更多 MCP 规范点。T4: MCP 工具增强（如批量探针、报告导出）。T5: native 异步化。T6: 完善 CI 配置。T7: 文档补全（含双后端差异说明）。

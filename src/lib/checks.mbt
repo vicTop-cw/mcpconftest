@@ -1,16 +1,5 @@
 ﻿///| Six categories of MCP protocol conformance checks.
 
-///| Parse a JSON-RPC response string, push a Fail on error.
-fn parse_resp(resp_str : String, label : String, results : Array[CheckResult]) -> Option[Json] {
-  let j = @json.parse(resp_str) catch {
-    _ => {
-      results.push(CheckResult::fail(label + ".parse", "JSON parse error", resp_str))
-      return None
-    }
-  }
-  Some(j)
-}
-
 ///| Initialize handshake check.
 pub async fn check_initialize(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
@@ -31,11 +20,11 @@ pub async fn check_initialize(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("jsonrpc") {
+      match (if j is Object(obj) { obj.get("jsonrpc") } else { None }) {
         Some(Json::String(s)) if s == "2.0" => results.push(CheckResult::pass("init.jsonrpc", "jsonrpc=2.0"))
         _ => results.push(CheckResult::fail("init.jsonrpc", "expected jsonrpc=2.0", resp_str))
       }
-      match j.value("result") {
+      match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) => {
           match r.get("serverInfo") {
             Some(_) => results.push(CheckResult::pass("init.server_info", "serverInfo present"))
@@ -70,7 +59,7 @@ pub async fn check_capabilities(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      let caps = match j.value("result") {
+      let caps = match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) => r.get("capabilities")
         _ => None
       }
@@ -100,7 +89,7 @@ pub async fn check_tools_list(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("result") {
+      match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) => {
           match r.get("tools") {
             Some(Json::Array(tools)) => {
@@ -146,7 +135,7 @@ pub async fn check_tools_call(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("error") {
+      match (if j is Object(obj) { obj.get("error") } else { None }) {
         Some(Json::Object(e)) => {
           match e.get("code") {
             Some(Json::Number(n, ..)) => {
@@ -191,8 +180,8 @@ pub async fn check_idempotency(session : Session) -> Array[CheckResult] {
         Ok(resp2) => {
           let j1 = @json.parse(resp1) catch { _ => Json::null() }
           let j2 = @json.parse(resp2) catch { _ => Json::null() }
-          let r1 = j1.value("result")
-          let r2 = j2.value("result")
+          let r1 = if j1 is Object(obj) { obj.get("result") } else { None }
+          let r2 = if j2 is Object(obj) { obj.get("result") } else { None }
           if r1 == r2 {
             results.push(CheckResult::pass("idempotency", "repeated tools/list returned same result"))
           } else {
@@ -218,7 +207,7 @@ pub async fn check_resources_list(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("result") {
+      match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) =>
           match r.get("resources") {
             Some(Json::Array(resources)) => {
@@ -263,7 +252,7 @@ pub async fn check_prompts_list(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("result") {
+      match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) =>
           match r.get("prompts") {
             Some(Json::Array(prompts)) => {
@@ -304,7 +293,7 @@ pub async fn check_resources_read_error(session : Session) -> Array[CheckResult]
           return results
         }
       }
-      match j.value("error") {
+      match (if j is Object(obj) { obj.get("error") } else { None }) {
         Some(Json::Object(e)) =>
           match e.get("code") {
             Some(Json::Number(_, ..)) => results.push(CheckResult::pass("resources_read.error", "non-existent resource returned error"))
@@ -331,10 +320,10 @@ pub async fn check_ping(session : Session) -> Array[CheckResult] {
           return results
         }
       }
-      match j.value("result") {
+      match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(_) => results.push(CheckResult::pass("ping.responds", "ping answered with result"))
         _ =>
-          match j.value("error") {
+          match (if j is Object(obj) { obj.get("error") } else { None }) {
             Some(Json::Object(e)) =>
               match e.get("code") {
                 Some(Json::Number(-32601, ..)) =>
@@ -362,7 +351,7 @@ pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
         if j is Json::Null {
           all_ok = false
           results.push(CheckResult::fail("keepalive.parse_\{i}", "JSON parse error", resp_str))
-        } else if j.value("result") is Some(_) {
+        } else if (if j is Object(obj) { obj.get("result") } else { None }) is Some(_) {
           ()
         } else {
           all_ok = false
@@ -403,7 +392,7 @@ pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult]
         if j is Json::Null {
           results.push(CheckResult::fail("negotiation.\{v}.parse", "JSON parse error", resp_str))
         } else {
-          match j.value("result") {
+          match (if j is Object(obj) { obj.get("result") } else { None }) {
           Some(Json::Object(r)) =>
             match r.get("protocolVersion") {
               Some(Json::String(echoed)) => {
@@ -416,7 +405,7 @@ pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult]
               _ => results.push(CheckResult::fail("negotiation.\{v}.no_version", "result missing protocolVersion", resp_str))
             }
           _ =>
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               // Unsupported version → error is compliant behavior
               Some(_) => results.push(CheckResult::pass("negotiation.\{v}.rejected", "unsupported version rejected with error (compliant)"))
               _ => results.push(CheckResult::fail("negotiation.\{v}.malformed", "response has neither result nor error", resp_str))
@@ -439,10 +428,10 @@ pub async fn check_logging(session : Session) -> Array[CheckResult] {
       if j is Json::Null {
         results.push(CheckResult::fail("logging.parse", "JSON parse error", resp_str))
       } else {
-        match j.value("result") {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
           Some(_) => results.push(CheckResult::pass("logging.set_level", "logging/setLevel accepted"))
           _ =>
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(e)) =>
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("logging.unsupported", "server does not support logging"))
@@ -471,7 +460,7 @@ pub async fn check_completion(session : Session) -> Array[CheckResult] {
       if j is Json::Null {
         results.push(CheckResult::fail("completion.parse", "JSON parse error", resp_str))
       } else {
-        match j.value("result") {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
           Some(Json::Object(r)) =>
             match r.get("completion") {
               Some(Json::Object(c)) =>
@@ -483,7 +472,7 @@ pub async fn check_completion(session : Session) -> Array[CheckResult] {
             }
           Some(_) => results.push(CheckResult::pass("completion.responded", "completion responded (result present)"))
           _ =>
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(e)) =>
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("completion.unsupported", "server does not support completion"))
@@ -509,10 +498,10 @@ pub async fn check_subscribe(session : Session) -> Array[CheckResult] {
       if j is Json::Null {
         results.push(CheckResult::fail("subscribe.parse", "JSON parse error", resp_str))
       } else {
-        match j.value("result") {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
           Some(_) => results.push(CheckResult::pass("subscribe.ok", "resources/subscribe accepted"))
           _ =>
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(e)) =>
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("subscribe.unsupported", "server does not support subscribe"))
@@ -544,7 +533,7 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
       if j is Json::Null {
         results.push(CheckResult::fail("sampling.parse", "JSON parse error", resp_str))
       } else {
-        match j.value("result") {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
           Some(Json::Object(r)) =>
             match r.get("content") {
               Some(Json::Object(c)) =>
@@ -556,7 +545,7 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
             }
           Some(_) => results.push(CheckResult::pass("sampling.responded", "sampling responded (result present)"))
           _ =>
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(e)) =>
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) => results.push(CheckResult::skip("sampling.unsupported", "server does not support sampling"))
@@ -581,15 +570,15 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
 ///| error schema. Pushes individual pass/fail findings onto results.
 pub fn validate_error_object(resp : Json, e : Map[String, Json], label : String, results : Array[CheckResult]) -> Unit {
   // jsonrpc must be "2.0"
-  match resp.value("jsonrpc") {
+  match (if resp is Object(obj) { obj.get("jsonrpc") } else { None }) {
     Some(Json::String(s)) if s == "2.0" =>
       results.push(CheckResult::pass(label + ".jsonrpc", "error response jsonrpc=2.0"))
     _ =>
       results.push(CheckResult::fail(label + ".jsonrpc", "error response jsonrpc != \"2.0\"", resp.stringify()))
   }
   // result and error are mutually exclusive
-  let has_result = resp.value("result") is Some(_)
-  let has_error = resp.value("error") is Some(_)
+  let has_result = (if resp is Object(obj) { obj.get("result") } else { None }) is Some(_)
+  let has_error = (if resp is Object(obj) { obj.get("error") } else { None }) is Some(_)
   if has_result && has_error {
     results.push(CheckResult::fail(label + ".exclusive", "response contains both result and error", resp.stringify()))
   } else {
@@ -628,7 +617,7 @@ pub fn validate_error_object(resp : Json, e : Map[String, Json], label : String,
 ///| Pure validation: a response id must equal the request id exactly
 ///| (type + value).
 pub fn validate_id_match(resp : Json, req_id : Json, label : String, results : Array[CheckResult]) -> Unit {
-  match resp.value("id") {
+  match (if resp is Object(obj) { obj.get("id") } else { None }) {
     Some(id) if id == req_id =>
       results.push(CheckResult::pass(label + ".id", "response id \{req_id.stringify()} matches request id"))
     Some(id) =>
@@ -656,9 +645,9 @@ pub fn validate_batch_resp(
         results.push(CheckResult::pass("batch.count", "response item count matches request count (\{req_ids.length()})"))
       }
       for req_id in req_ids {
-        var found = false
+        let mut found = false
         for item in items {
-          match item.value("id") {
+          match (if item is Object(obj) { obj.get("id") } else { None }) {
             Some(id) => if id == req_id { found = true }
             None => ()
           }
@@ -670,16 +659,16 @@ pub fn validate_batch_resp(
         }
       }
       for req_id in err_req_ids {
-        var item_opt : Option[Json] = None
+        let mut item_opt : Option[Json] = None
         for item in items {
-          match item.value("id") {
+          match (if item is Object(obj) { obj.get("id") } else { None }) {
             Some(id) if id == req_id => item_opt = Some(item)
             _ => ()
           }
         }
         match item_opt {
           Some(item) =>
-            match item.value("error") {
+            match (if item is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(_)) =>
                 results.push(CheckResult::pass("batch.error_schema", "error item for \{req_id.stringify()} carries a valid error object"))
               Some(_) =>
@@ -794,10 +783,10 @@ pub async fn check_error_schema(session : Session) -> Array[CheckResult] {
       }
       match j {
         Json::Object(_) => {
-          let has_result = j.value("result") is Some(_)
-          let has_error = j.value("error") is Some(_)
+          let has_result = (if j is Object(obj) { obj.get("result") } else { None }) is Some(_)
+          let has_error = (if j is Object(obj) { obj.get("error") } else { None }) is Some(_)
           if has_error {
-            match j.value("error") {
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
               Some(Json::Object(e)) => validate_error_object(j, e, "error_schema", results)
               Some(_) => results.push(CheckResult::fail("error_schema.shape", "error is not an object", resp_str))
               None => ()

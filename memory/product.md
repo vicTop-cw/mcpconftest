@@ -1,0 +1,1 @@
+mcpconftest: MCP 协议合规检查库（MoonBit）。已具备 js/native 双后端、MCP server（version/run_probe/list_checks）、CLI（run/list-checks/version/serve）、一行命令安装注册体系（blackbox 三件套）、15 类检查、4 种报告格式（JSON/Markdown/HTML/JUnit）。当前版本 0.7.0，已发布 MoonCakes。

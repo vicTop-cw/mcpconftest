@@ -147,7 +147,7 @@ test "batch_error_schema_missing" {
 test "error_schema_valid" {
   let results : Array[@lib.CheckResult] = []
   let resp = mk_error_resp(Json::number(1.0), -32601.0, "Method not found", false, false)
-  let e : Map[String, Json] = match resp.value("error") {
+  let e : Map[String, Json] = match (if resp is Object(obj) { obj.get("error") } else { None }) {
     Some(Json::Object(o)) => o
     _ => Map([])
   }
@@ -162,7 +162,7 @@ test "error_schema_valid" {
 test "error_schema_bad_code_coexist_empty_message" {
   let results : Array[@lib.CheckResult] = []
   let resp = mk_error_resp(Json::number(1.0), 0.5, "", true, false)
-  let e : Map[String, Json] = match resp.value("error") {
+  let e : Map[String, Json] = match (if resp is Object(obj) { obj.get("error") } else { None }) {
     Some(Json::Object(o)) => o
     _ => Map([])
   }
@@ -175,7 +175,7 @@ test "error_schema_bad_code_coexist_empty_message" {
 test "error_schema_code_out_of_range" {
   let results : Array[@lib.CheckResult] = []
   let resp = mk_error_resp(Json::number(1.0), -31999.0, "x", false, false)
-  let e : Map[String, Json] = match resp.value("error") {
+  let e : Map[String, Json] = match (if resp is Object(obj) { obj.get("error") } else { None }) {
     Some(Json::Object(o)) => o
     _ => Map([])
   }

@@ -26,7 +26,7 @@ async fn timed_check(
 
 ///| Count results by severity name ("pass"/"fail").
 pub fn count(results : Array[CheckResult], sev : String) -> Int {
-  var n = 0
+  let mut n = 0
   for r in results {
     match r.severity {
       Pass => if sev == "pass" { n += 1 }
@@ -39,7 +39,7 @@ pub fn count(results : Array[CheckResult], sev : String) -> Int {
 
 ///| Count transport-level errors (timeout / parse / write failures).
 pub fn count_err(results : Array[CheckResult]) -> Int {
-  var n = 0
+  let mut n = 0
   for r in results {
     if r.name.contains("timeout") || r.name.contains("parse") {
       n += 1
@@ -188,7 +188,7 @@ pub async fn run_probe(
     [run_fixture()]
   }
   let all_results : Array[CheckResult] = []
-  var all_ok = true
+  let mut all_ok = true
   for run in runs {
     if !run.ok { all_ok = false }
     for r in run.results { all_results.push(r) }

@@ -1,7 +1,7 @@
 import {
   "moonbitlang/core/json",
+  "moonbitlang/core/debug",
   "moonbitlang/core/env",
-  "moonbitlang/core/ref",
   "moonbitlang/async",
   "moonbitlang/async/js_async",
   "moonbitlang/async/io",
@@ -12,6 +12,11 @@ import {
 }
 
 supported_targets = "js+native"
+
+// *_js.mbt / *_native.mbt 按 target 拆分，跨 target 的 unused_package
+// 由 warnings 统一压制（与 cmd/moon.pkg 一致）。
+
+warnings = "-29-67"
 
 options(targets: {
   "probe_io_js.mbt": ["js"],

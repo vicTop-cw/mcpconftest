@@ -6,7 +6,6 @@
 struct ProbeRun {
   ok : Bool
   results : Array[@lib.CheckResult]
-  cmd : String
 }
 
 ///| Push all items from a CheckResult array into results.
@@ -19,7 +18,7 @@ async fn run_fixture() -> ProbeRun {
   let cmd = "node tests/fixtures/mcp_fixture_server.js"
   let session = @lib.Session::new(cmd)
   if !session.alive {
-    return { ok: false, results: [], cmd }
+    return { ok: false, results: [] }
   }
   let results : Array[@lib.CheckResult] = []
   let mut ok = true
@@ -55,14 +54,14 @@ async fn run_fixture() -> ProbeRun {
   push_all(results, r12)
   ignore(session.close())
   println("[fixture] \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail")
-  { ok, results, cmd }
+  { ok, results }
 }
 
 ///| Probe an arbitrary MCP server (no fixture-specific violation expectations).
 async fn probe_server(cmd : String) -> ProbeRun {
   let session = @lib.Session::new(cmd)
   if !session.alive {
-    return { ok: false, results: [], cmd }
+    return { ok: false, results: [] }
   }
   let results : Array[@lib.CheckResult] = []
   let mut ok = true
@@ -98,12 +97,12 @@ async fn probe_server(cmd : String) -> ProbeRun {
   push_all(results, r12)
   ignore(session.close())
   println("[target] \{cmd}: \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail, \{count_err(results)} err")
-  { ok, results, cmd }
+  { ok, results }
 }
 
 ///| Count results by severity name ("pass"/"fail").
 fn count(results : Array[@lib.CheckResult], sev : String) -> Int {
-  var n = 0
+  let mut n = 0
   for r in results {
     match r.severity {
       @lib.Pass => if sev == "pass" { n += 1 }
@@ -116,7 +115,7 @@ fn count(results : Array[@lib.CheckResult], sev : String) -> Int {
 
 ///| Count transport-level errors (timeout / parse / write failures).
 fn count_err(results : Array[@lib.CheckResult]) -> Int {
-  var n = 0
+  let mut n = 0
   for r in results {
     if r.name.contains("timeout") || r.name.contains("parse") {
       n += 1
@@ -133,9 +132,9 @@ extern "js" fn js_now_iso() -> String =
 async fn main {
   let args = @env.args()
   let servers : Array[String] = []
-  var report_dir = "./mcpconftest-report"
-  var junit = false
-  var i = 2
+  let mut report_dir = "./mcpconftest-report"
+  let mut junit = false
+  let mut i = 2
   while i < args.length() {
     if args[i] == "--server" && i + 1 < args.length() {
       servers.push(args[i + 1])
@@ -160,7 +159,7 @@ async fn main {
     [run_fixture()]
   }
   let all_results : Array[@lib.CheckResult] = []
-  var all_ok = true
+  let mut all_ok = true
   for run in runs {
     if !run.ok { all_ok = false }
     for r in run.results { all_results.push(r) }

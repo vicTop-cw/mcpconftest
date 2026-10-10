@@ -6,7 +6,7 @@
 /// lets the `src/lib` package build for both `js` and `native` targets.
 
 extern "js" fn js_spawn_mcp(
-  argv : Array[String],
+  argv : FixedArray[String],
   workdir : String,
 ) -> @js_async.Promise[Int] =
   #| async (argv, workdir) => {
@@ -28,7 +28,7 @@ extern "js" fn js_spawn_mcp(
 
 ///| Spawn a stdio child MCP process. Returns session handle or -1 on failure.
 pub async fn io_spawn(argv : Array[String], workdir : String) -> Int {
-  js_spawn_mcp(argv, workdir).wait() catch {
+  js_spawn_mcp(FixedArray::from_array(argv), workdir).wait() catch {
     _ => -1
   }
 }

@@ -1,0 +1,1 @@
+自主推进 mcpconftest 后续开发。已规划方向：1) 发 0.7.1 patch（当前工作区已有双后端 warning 清理修改未提交）；2) 补 native WebSocket 真实实现；3) 扩充 checks；4) MCP 工具增强；5) native 异步化；6) CI；7) 文档补全。推进约束：仅使用 fist-mbt 注册命令（fist v0.3.6）与 mcpconftest 已注册命令，不使用 fist-mbt 本地开发项目源码。
