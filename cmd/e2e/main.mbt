@@ -153,7 +153,7 @@ async fn main {
     }
     i += 1
   }
-  println("mcpconftest v0.5.0 e2e")
+  println("mcpconftest v\{@lib.version()} e2e")
   let runs : Array[ProbeRun] = if servers.length() > 0 {
     println("probing \{servers.length()} server(s) in parallel")
     let tasks : Array[async () -> ProbeRun] = servers.map(fn(cmd) {

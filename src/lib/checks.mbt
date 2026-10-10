@@ -380,7 +380,7 @@ pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult]
     let params = Json::object({
       "protocolVersion": Json::string(v),
       "capabilities": Json::object({}),
-      "clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string("0.5.0") }),
+      "clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }),
       "_meta": Json::object({
         "io.modelcontextprotocol/protocolVersion": Json::string(v),
         "io.modelcontextprotocol/clientCapabilities": Json::object({}),
