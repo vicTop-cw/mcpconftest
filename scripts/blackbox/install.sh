@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # scripts/blackbox/install.sh —— curl 一条命令安装入口（Linux/WSL）
 #
 # 用户跑（首选，GitHub 镜像仓库 raw 直链；发布新版本时同步更新 URL）：
@@ -89,11 +89,11 @@ fi
 # --- 1. 构造下载 URL ---
 ZIP="mcpconftest-js-v${VERSION}.zip"
 URLS=(
-  "https://gitcode.com/VictorTop/mcpconftest/-/releases/download/v${VERSION}/${ZIP}"
+  "https://gitcode.com/VictorTop/mcpconftest/releases/download/v${VERSION}/${ZIP}"
   "https://atomgit.com/VictorTop/mcpconftest/releases/download/v${VERSION}/${ZIP}"
 )
 if [ -n "${MCP_BASE_URL:-}" ]; then
-  URLS=("${MCP_BASE_URL}/-/releases/download/v${VERSION}/${ZIP}")
+  URLS=("${MCP_BASE_URL}/releases/download/v${VERSION}/${ZIP}")
 fi
 
 DEST="${HOME}/.local/share/mcpconftest"

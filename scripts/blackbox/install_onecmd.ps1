@@ -12,7 +12,7 @@ scripts/blackbox/install_onecmd.ps1 —— irm 一条命令安装入口（mcpcon
 # 该备用入口可能无法直接 iex；脚本本体仍可从仓库 clone 后本地执行。
 
 下载源（自动按序 fallback）：
-  1. GitCode Release Assets 直链（https://gitcode.com/VictorTop/mcpconftest/-/releases/download/vX/...）
+  1. GitCode Release Assets 直链（https://gitcode.com/VictorTop/mcpconftest/releases/download/vX/...）
   2. AtomGit Release Assets 直链（https://atomgit.com/VictorTop/mcpconftest/releases/download/vX/...）
 版本解析源（自动按序探测，探测不到退回内嵌默认值）：
   raw.githubusercontent.com / gitcode.com / atomgit.com 的 moon.mod（HTML sniff 防护）
@@ -107,10 +107,10 @@ Write-Host "  目标版本 v$Version（来源：$versionSource）" -ForegroundCo
 # ---- 下载 ----
 $zipName = "mcpconftest-js-v$Version.zip"
 $urls = @(
-  "https://gitcode.com/VictorTop/mcpconftest/-/releases/download/v$Version/$zipName",
+  "https://gitcode.com/VictorTop/mcpconftest/releases/download/v$Version/$zipName",
   "https://atomgit.com/VictorTop/mcpconftest/releases/download/v$Version/$zipName"
 )
-if ($BaseUrl -ne "") { $urls = @(($BaseUrl.TrimEnd('/') + "/-/releases/download/v$Version/$zipName")) }
+if ($BaseUrl -ne "") { $urls = @(($BaseUrl.TrimEnd('/') + "/releases/download/v$Version/$zipName")) }
 if ($BaseUrl -ne "" -and $LocalZip -ne "") {
   Write-Host "  [x] -BaseUrl 与 -LocalZip 不能同时给（前者走镜像下载，后者跳过下载）" -ForegroundColor Red
   exit 1
