@@ -1,0 +1,123 @@
+///| Spec-driven check catalog (L1: spec is the single source of truth).
+///| Reads specs/manifest.json from the current working directory and renders
+///| the check category list. Falls back to a static catalog when the manifest
+///| is absent (e.g. running from a release bundle without the repo tree).
+
+const SPEC_MANIFEST_PATH : String = "specs/manifest.json"
+
+priv struct SpecEntry {
+  check_id : String
+  category : String
+  title : String
+  fingerprint : String
+}
+
+///| Load spec manifest entries; returns [] when unavailable.
+fn load_specs() -> Array[SpecEntry] {
+  let raw = spec_read_file(SPEC_MANIFEST_PATH)
+  if raw.length() == 0 {
+    return []
+  }
+  let j = @json.parse(raw) catch { _ => Json::null() }
+  let entries : Array[SpecEntry] = []
+  match j {
+    Json::Array(arr) => {
+      for item in arr {
+        match item {
+          Json::Object(o) => {
+            let check_id = match o.get("check_id") {
+              Some(Json::String(s)) => s
+              _ => continue
+            }
+            let category = match o.get("category") {
+              Some(Json::String(s)) => s
+              _ => ""
+            }
+            let title = match o.get("title") {
+              Some(Json::String(s)) => s
+              _ => ""
+            }
+            let fingerprint = match o.get("fingerprint") {
+              Some(Json::String(s)) => s
+              _ => ""
+            }
+            entries.push({ check_id, category, title, fingerprint })
+          }
+          _ => ()
+        }
+      }
+    }
+    _ => ()
+  }
+  entries
+}
+
+///| Fallback title resolution: read the per-check spec.json for its title
+///| when the manifest entry omits it. Path = specs/<category>/<leaf>/spec.json.
+fn resolve_title(e : SpecEntry) -> String {
+  if e.title.length() > 0 {
+    return e.title
+  }
+  if e.category.length() == 0 {
+    return e.check_id
+  }
+  let leaf = match e.check_id.split(".").to_array().pop() {
+    Some(v) => v.to_owned()
+    None => e.check_id
+  }
+  let path = "specs/\{e.category}/\{leaf}/spec.json"
+  let raw = spec_read_file(path)
+  if raw.length() == 0 {
+    return e.check_id
+  }
+  let j = @json.parse(raw) catch { _ => Json::null() }
+  match j {
+    Json::Object(o) => {
+      match o.get("title") {
+        Some(Json::String(s)) => s
+        _ => e.check_id
+      }
+    }
+    _ => e.check_id
+  }
+}
+
+///| Render the check category list, spec-driven when possible.
+pub fn list_checks_spec() -> Array[String] {
+  let entries = load_specs()
+  if entries.length() == 0 {
+    // Fallback: static catalog matching the v0.8.0 baseline.
+    return [
+      "initialize — jsonrpc, server_info, protocol_version",
+      "capabilities — response structure",
+      "tools/list — tool schema (name, description mandatory)",
+      "tools/call — error path (-32601 for unknown tool)",
+      "notifications — session liveness after unknown notifications",
+      "idempotency — repeated identical requests",
+      "resources/list, resources/read — resource schema + error path",
+      "prompts/list — prompt schema (name mandatory)",
+      "ping, keepalive — spec-mandated ping + session stability",
+      "protocol negotiation — version matrix (4 protocols)",
+      "logging/setLevel — logging capability",
+      "completion/complete — prompt completion",
+      "resources/subscribe — subscription capability",
+      "sampling/createMessage — sampling capability",
+      "batch — JSON-RPC batch request handling",
+      "id_matching — JSON-RPC id matching between request and response",
+      "error_schema — Error response schema conformance (code/message)",
+      "resources_read_error — resources/read error path (-32602 / missing resource)",
+      "notifications_initialized — initialized notification handling",
+    ]
+  }
+  let out : Array[String] = []
+  for e in entries {
+    let title = resolve_title(e)
+    let fp = if e.fingerprint.length() > 0 {
+      " (\{e.fingerprint})"
+    } else {
+      ""
+    }
+    out.push("\{e.check_id} — \{title}\{fp}")
+  }
+  out
+}

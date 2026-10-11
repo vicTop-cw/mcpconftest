@@ -4,29 +4,9 @@ fn cli_exit(code : Int) -> Unit {
   @sys.exit(code)
 }
 
-///| Print available check categories.
+///| Print available check categories (spec-driven, L1).
 fn list_checks() -> Unit {
-  let checks = [
-    "initialize — jsonrpc, server_info, protocol_version",
-    "capabilities — response structure",
-    "tools/list — tool schema (name, description mandatory)",
-    "tools/call — error path (-32601 for unknown tool)",
-    "notifications — session liveness after unknown notifications",
-    "idempotency — repeated identical requests",
-    "resources/list, resources/read — resource schema + error path",
-    "prompts/list — prompt schema (name mandatory)",
-    "ping, keepalive — spec-mandated ping + session stability",
-    "protocol negotiation — version matrix (4 protocols)",
-    "logging/setLevel — logging capability",
-    "completion/complete — prompt completion",
-    "resources/subscribe — subscription capability",
-    "sampling/createMessage — sampling capability",
-    "batch — JSON-RPC batch request handling",
-    "id_matching — JSON-RPC id matching between request and response",
-    "error_schema — Error response schema conformance (code/message)",
-    "resources_read_error — resources/read error path (-32602 / missing resource)",
-    "notifications_initialized — initialized notification handling",
-  ]
+  let checks = @lib.list_checks_spec()
   println("mcpconftest check categories:")
   for c in checks {
     println("  - \{c}")

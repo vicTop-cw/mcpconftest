@@ -26,4 +26,6 @@ options(targets: {
   "session_io_native.mbt": ["native"],
   "report_fs_js.mbt": ["js"],
   "report_fs_native.mbt": ["native"],
+  "spec_io_js.mbt": ["js"],
+  "spec_io_native.mbt": ["native"],
 })

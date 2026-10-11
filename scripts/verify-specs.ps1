@@ -24,6 +24,7 @@ $names = @()
 foreach ($line in ($out -split "`n")) {
   $trimmed = $line.Trim()
   if ($trimmed -eq "" -or $trimmed -match "^\*\*") { continue }
+  if ($trimmed -match "mcpconftest check categories") { continue }
   if ($trimmed -match '^\-\s+(.+?)(?:\s*—|\s*$)' -or $trimmed -match '^\d+\.\s+(.+?)(?:\s*—|\s*$)') {
     $names += $Matches[1].Trim()
   } else {
