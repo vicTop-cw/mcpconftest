@@ -10,6 +10,7 @@ import {
   "moonbitlang/x/fs",
   "colmugx/mcp" @mcp,
   "colmugx/mcp/protocol/types" @mcp_types,
+  "vicTop-cw/fist-mbt" @fist,
 }
 
 supported_targets = "js+native"
@@ -19,7 +20,9 @@ supported_targets = "js+native"
 
 warnings = "-29-67"
 
-options(targets: {
+options(
+  link: { "native": { "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib" } },
+  targets: {
   "probe_io_js.mbt": ["js"],
   "probe_io_native.mbt": ["native"],
   "session_io_js.mbt": ["js"],

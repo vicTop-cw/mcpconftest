@@ -135,7 +135,7 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
       Ok(@mcp.ToolResult::text(Json::string(version()).stringify()))
     },
   )
-  s3
+  with_mcpcf_tools(s3)
 }
 
 ///| Extract the servers array from tool arguments.

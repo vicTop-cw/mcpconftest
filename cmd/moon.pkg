@@ -18,7 +18,9 @@ supported_targets = "js+native"
 
 warnings = "-29-35"
 
-options(targets: {
+options(
+  link: { "native": { "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib" } },
+  targets: {
   "serve_io_js.mbt": ["js"],
   "serve_io_native.mbt": ["native"],
 })
