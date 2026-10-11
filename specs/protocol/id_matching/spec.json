@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.protocol.id_matching",
+  "category": "protocol",
+  "title": "JSON-RPC id 匹配检查",
+  "operations": [
+    "tools/list",
+    "ping"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "request_response_id_match"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:8f5e6f14f2c39fdf8fdd5f5af0e656a067b1adc7935e2255eb556f5ec6f8c78b",
+  "version": "0.8.0"
+}

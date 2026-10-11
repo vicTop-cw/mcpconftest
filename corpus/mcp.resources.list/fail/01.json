@@ -1,0 +1,18 @@
+{
+  "check_id": "mcp.resources.list",
+  "kind": "fail",
+  "desc": "违规：资源缺 name",
+  "request": {
+    "method": "resources/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "resources": [
+        {
+          "uri": "file:///a.txt"
+        }
+      ]
+    }
+  }
+}

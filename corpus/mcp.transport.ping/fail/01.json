@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.transport.ping",
+  "kind": "fail",
+  "desc": "违规：ping 超时无响应",
+  "request": {
+    "method": "ping"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32000,
+      "message": "timeout"
+    }
+  }
+}

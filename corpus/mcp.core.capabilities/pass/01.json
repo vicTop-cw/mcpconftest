@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.core.capabilities",
+  "kind": "pass",
+  "desc": "合规：声明 tools 能力",
+  "request": {
+    "method": "initialize"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "capabilities": {
+        "tools": {}
+      }
+    }
+  }
+}

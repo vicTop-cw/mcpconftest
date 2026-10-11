@@ -1,0 +1,13 @@
+{
+  "check_id": "mcp.resources.subscribe",
+  "kind": "pass",
+  "desc": "合规：订阅成功",
+  "request": {
+    "method": "resources/subscribe",
+    "uri": "file:///a.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {}
+  }
+}

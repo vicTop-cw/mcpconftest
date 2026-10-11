@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.prompts.list",
+  "category": "prompts",
+  "title": "prompts/list schema 检查",
+  "operations": [
+    "prompts/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "prompt_name_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:404a6d3c4fbf819705dd35528ac4494f2ada8b18709f5ecf3dbdbc319c0ce325",
+  "version": "0.8.0"
+}

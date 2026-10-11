@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.core.capabilities",
+  "category": "core",
+  "title": "capabilities 响应结构检查",
+  "operations": [
+    "initialize"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "capabilities_object_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:8637b22db2ba0327f849f5a98bfcc43b0e120c5c0ff896223fc29832f87304ae",
+  "version": "0.8.0"
+}

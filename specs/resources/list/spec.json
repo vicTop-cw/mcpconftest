@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.resources.list",
+  "category": "resources",
+  "title": "resources/list schema 检查",
+  "operations": [
+    "resources/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "resource_schema_valid",
+    "resource_name_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:deb9a7a2512fca7c263b81b2332729c815323347e3be1581f06c87271097a9f8",
+  "version": "0.8.0"
+}

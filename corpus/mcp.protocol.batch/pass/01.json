@@ -1,0 +1,27 @@
+{
+  "check_id": "mcp.protocol.batch",
+  "kind": "pass",
+  "desc": "合规：批量请求逐条响应",
+  "request": [
+    {
+      "method": "ping"
+    },
+    {
+      "method": "tools/list"
+    }
+  ],
+  "response": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {}
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "tools": []
+      }
+    }
+  ]
+}

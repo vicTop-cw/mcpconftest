@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.protocol.id_matching",
+  "kind": "pass",
+  "desc": "合规：响应 id 与请求一致",
+  "request": {
+    "id": 42,
+    "method": "ping"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "id": 42,
+    "result": {}
+  }
+}

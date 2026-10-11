@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.logging.setlevel",
+  "kind": "fail",
+  "desc": "违规：setLevel 报错",
+  "request": {
+    "method": "logging/setLevel",
+    "level": "info"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32602,
+      "message": "bad level"
+    }
+  }
+}

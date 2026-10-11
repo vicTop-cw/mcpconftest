@@ -1,0 +1,97 @@
+[
+  {
+    "check_id": "mcp.core.initialize",
+    "category": "core",
+    "fingerprint": "sha256:815d5f0ceb84217cbcfa58b3fd288acf0e5cdbead9435303a81cc5f13007898c"
+  },
+  {
+    "check_id": "mcp.core.capabilities",
+    "category": "core",
+    "fingerprint": "sha256:8637b22db2ba0327f849f5a98bfcc43b0e120c5c0ff896223fc29832f87304ae"
+  },
+  {
+    "check_id": "mcp.tools.list",
+    "category": "tools",
+    "fingerprint": "sha256:8cbfd1c61fb27e0c9b9048d56c9017af1de60b88146e281fda5a38888b61ee28"
+  },
+  {
+    "check_id": "mcp.tools.call",
+    "category": "tools",
+    "fingerprint": "sha256:ba8e614903ee2e6c445677e54c4d0b70f35b62adca184365e6aebb2897bb5280"
+  },
+  {
+    "check_id": "mcp.session.notifications",
+    "category": "session",
+    "fingerprint": "sha256:c3605f1be7e38ff281aa74ff6f6e0084285de923982b07424121e65252da1cba"
+  },
+  {
+    "check_id": "mcp.session.idempotency",
+    "category": "session",
+    "fingerprint": "sha256:6a3bc37f508c0437bdb081765f746536e299517b755c739976cdcfbd4cca78a2"
+  },
+  {
+    "check_id": "mcp.resources.list",
+    "category": "resources",
+    "fingerprint": "sha256:deb9a7a2512fca7c263b81b2332729c815323347e3be1581f06c87271097a9f8"
+  },
+  {
+    "check_id": "mcp.resources.read_error",
+    "category": "resources",
+    "fingerprint": "sha256:8c5fcd90bb5991289c973e2719765219ec9a3c037fae275d433724f1386e579e"
+  },
+  {
+    "check_id": "mcp.prompts.list",
+    "category": "prompts",
+    "fingerprint": "sha256:404a6d3c4fbf819705dd35528ac4494f2ada8b18709f5ecf3dbdbc319c0ce325"
+  },
+  {
+    "check_id": "mcp.transport.ping",
+    "category": "transport",
+    "fingerprint": "sha256:cb3dac0c70f207979b7d2315ed116db46e00e5024c8404435a53d4f346095a0e"
+  },
+  {
+    "check_id": "mcp.transport.keepalive",
+    "category": "transport",
+    "fingerprint": "sha256:2ac0cadfb3553b298581fee8b1ab4a392a8aadb447c703138c9ac100055b37a8"
+  },
+  {
+    "check_id": "mcp.protocol.negotiation",
+    "category": "protocol",
+    "fingerprint": "sha256:13e3212181d481d3e29f98389721d909b93f16d3544ca37f0558532ee3469e26"
+  },
+  {
+    "check_id": "mcp.logging.setlevel",
+    "category": "logging",
+    "fingerprint": "sha256:dd0429876356e239ce973cfb17242e3d8849acbdc9f9c3c630e710fd00004008"
+  },
+  {
+    "check_id": "mcp.completion.complete",
+    "category": "completion",
+    "fingerprint": "sha256:c7abddb46345d606cba00f870c5387d79c14ad1d240197da60c0a180ebeddb3e"
+  },
+  {
+    "check_id": "mcp.resources.subscribe",
+    "category": "resources",
+    "fingerprint": "sha256:6d3bb7c8f37e74a318753f4c05ce9768b60cc28bc481e9c6683c3c508d9511a6"
+  },
+  {
+    "check_id": "mcp.sampling.create_message",
+    "category": "sampling",
+    "fingerprint": "sha256:34f69fd7d12fc97c964ca0a706a97c5f742332e9251fc8cfbb55b3b9f5080535"
+  },
+  {
+    "check_id": "mcp.protocol.batch",
+    "category": "protocol",
+    "fingerprint": "sha256:f3c1378a19cbec7900f0a891b2dcbc4e81c983972c6edd9d3a302e65fd541604"
+  },
+  {
+    "check_id": "mcp.protocol.id_matching",
+    "category": "protocol",
+    "fingerprint": "sha256:8f5e6f14f2c39fdf8fdd5f5af0e656a067b1adc7935e2255eb556f5ec6f8c78b"
+  },
+  {
+    "check_id": "mcp.protocol.error_schema",
+    "category": "protocol",
+    "fingerprint": "sha256:fbbf2fbdd2b512c3f03801c936b2aed707fc9177f2eec6dac878c63f7fac415a"
+  }
+]

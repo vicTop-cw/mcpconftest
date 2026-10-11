@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.tools.list",
+  "category": "tools",
+  "title": "tools/list 工具 schema 检查",
+  "operations": [
+    "tools/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "tool_name_mandatory",
+    "tool_description_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:8cbfd1c61fb27e0c9b9048d56c9017af1de60b88146e281fda5a38888b61ee28",
+  "version": "0.8.0"
+}

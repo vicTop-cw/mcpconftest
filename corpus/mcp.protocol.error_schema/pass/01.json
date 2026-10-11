@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.protocol.error_schema",
+  "kind": "pass",
+  "desc": "合规：error 含 code/message",
+  "request": {
+    "method": "tools/call"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32601,
+      "message": "Method not found"
+    }
+  }
+}

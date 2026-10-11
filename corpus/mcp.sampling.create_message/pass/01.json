@@ -1,0 +1,27 @@
+{
+  "check_id": "mcp.sampling.create_message",
+  "kind": "pass",
+  "desc": "合规：采样返回消息",
+  "request": {
+    "method": "sampling/createMessage",
+    "messages": [
+      {
+        "role": "user",
+        "content": {
+          "type": "text",
+          "text": "hi"
+        }
+      }
+    ]
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "role": "assistant",
+      "content": {
+        "type": "text",
+        "text": "hello"
+      }
+    }
+  }
+}

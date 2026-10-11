@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.resources.read_error",
+  "kind": "pass",
+  "desc": "合规：缺失资源返回 -32602",
+  "request": {
+    "method": "resources/read",
+    "uri": "file:///missing.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32602,
+      "message": "Resource not found"
+    }
+  }
+}

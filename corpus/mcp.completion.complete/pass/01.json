@@ -1,0 +1,22 @@
+{
+  "check_id": "mcp.completion.complete",
+  "kind": "pass",
+  "desc": "合规：completion 返回建议",
+  "request": {
+    "method": "completion/complete",
+    "ref": {
+      "name": "x"
+    },
+    "argument": ""
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "completion": {
+        "values": [
+          "a"
+        ]
+      }
+    }
+  }
+}

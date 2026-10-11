@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.logging.setlevel",
+  "category": "logging",
+  "title": "logging/setLevel 能力检查",
+  "operations": [
+    "logging/setLevel"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "logging_capability_optional"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:dd0429876356e239ce973cfb17242e3d8849acbdc9f9c3c630e710fd00004008",
+  "version": "0.8.0"
+}

@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.session.notifications",
+  "kind": "fail",
+  "desc": "违规：未知通知导致会话中断",
+  "request": {
+    "method": "notifications/unknown"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32600,
+      "message": "shutdown"
+    }
+  }
+}

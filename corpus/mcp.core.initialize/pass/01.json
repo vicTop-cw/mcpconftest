@@ -1,0 +1,23 @@
+{
+  "check_id": "mcp.core.initialize",
+  "kind": "pass",
+  "desc": "合规：jsonrpc=2.0 + serverInfo + protocolVersion 匹配",
+  "request": {
+    "method": "initialize",
+    "protocolVersion": "2026-07-28",
+    "clientInfo": {
+      "name": "mcpconftest",
+      "version": "0.8.0"
+    }
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "serverInfo": {
+        "name": "demo",
+        "version": "1.0"
+      },
+      "protocolVersion": "2026-07-28"
+    }
+  }
+}

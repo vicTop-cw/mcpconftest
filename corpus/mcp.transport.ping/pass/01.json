@@ -1,0 +1,12 @@
+{
+  "check_id": "mcp.transport.ping",
+  "kind": "pass",
+  "desc": "合规：ping 返回成功",
+  "request": {
+    "method": "ping"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {}
+  }
+}

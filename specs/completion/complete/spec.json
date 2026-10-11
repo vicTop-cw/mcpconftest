@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.completion.complete",
+  "category": "completion",
+  "title": "prompt 补全检查",
+  "operations": [
+    "completion/complete"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "completion_capability_optional"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:c7abddb46345d606cba00f870c5387d79c14ad1d240197da60c0a180ebeddb3e",
+  "version": "0.8.0"
+}

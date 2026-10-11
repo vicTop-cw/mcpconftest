@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.protocol.id_matching",
+  "kind": "fail",
+  "desc": "违规：响应 id 不匹配",
+  "request": {
+    "id": 42,
+    "method": "ping"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "id": 43,
+    "result": {}
+  }
+}

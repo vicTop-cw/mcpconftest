@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.resources.subscribe",
+  "category": "resources",
+  "title": "resources/subscribe 订阅能力检查",
+  "operations": [
+    "resources/subscribe",
+    "notifications/resources/updated"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "subscribe_capability_optional"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:6d3bb7c8f37e74a318753f4c05ce9768b60cc28bc481e9c6683c3c508d9511a6",
+  "version": "0.8.0"
+}

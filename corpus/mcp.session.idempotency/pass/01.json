@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.session.idempotency",
+  "kind": "pass",
+  "desc": "合规：重复 tools/list 结果一致",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.sampling.create_message",
+  "category": "sampling",
+  "title": "sampling/createMessage 能力检查",
+  "operations": [
+    "sampling/createMessage"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "sampling_capability_optional"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:34f69fd7d12fc97c964ca0a706a97c5f742332e9251fc8cfbb55b3b9f5080535",
+  "version": "0.8.0"
+}

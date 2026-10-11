@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.resources.subscribe",
+  "kind": "fail",
+  "desc": "违规：订阅被拒",
+  "request": {
+    "method": "resources/subscribe",
+    "uri": "file:///a.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32602,
+      "message": "no such resource"
+    }
+  }
+}

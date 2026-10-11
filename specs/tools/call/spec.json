@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.tools.call",
+  "category": "tools",
+  "title": "tools/call 错误路径检查",
+  "operations": [
+    "tools/call"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "unknown_tool_must_error_32601"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:ba8e614903ee2e6c445677e54c4d0b70f35b62adca184365e6aebb2897bb5280",
+  "version": "0.8.0"
+}

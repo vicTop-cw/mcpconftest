@@ -1,0 +1,19 @@
+{
+  "check_id": "mcp.resources.list",
+  "kind": "pass",
+  "desc": "合规：resources 数组含 name/uri",
+  "request": {
+    "method": "resources/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "resources": [
+        {
+          "uri": "file:///a.txt",
+          "name": "a"
+        }
+      ]
+    }
+  }
+}

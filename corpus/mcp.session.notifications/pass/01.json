@@ -1,0 +1,12 @@
+{
+  "check_id": "mcp.session.notifications",
+  "kind": "pass",
+  "desc": "合规：未知通知后会话存活",
+  "request": {
+    "method": "notifications/unknown"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.transport.keepalive",
+  "category": "transport",
+  "title": "长会话稳定性检查",
+  "operations": [
+    "ping",
+    "tools/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "session_stable_across_calls"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:2ac0cadfb3553b298581fee8b1ab4a392a8aadb447c703138c9ac100055b37a8",
+  "version": "0.8.0"
+}

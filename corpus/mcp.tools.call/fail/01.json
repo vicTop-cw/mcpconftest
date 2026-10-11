@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.tools.call",
+  "kind": "fail",
+  "desc": "违规：未知工具返回非 -32601",
+  "request": {
+    "method": "tools/call",
+    "name": "__mcpconftest_nonexistent__"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32000,
+      "message": "Internal error"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.tools.call",
+  "kind": "pass",
+  "desc": "合规：未知工具返回 -32601",
+  "request": {
+    "method": "tools/call",
+    "name": "__mcpconftest_nonexistent__"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32601,
+      "message": "Method not found"
+    }
+  }
+}

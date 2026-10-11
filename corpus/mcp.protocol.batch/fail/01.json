@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.protocol.batch",
+  "kind": "fail",
+  "desc": "违规：批量请求整体失败",
+  "request": [
+    {
+      "method": "ping"
+    },
+    {
+      "method": "tools/list"
+    }
+  ],
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32600,
+      "message": "batch not supported"
+    }
+  }
+}

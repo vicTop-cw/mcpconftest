@@ -1,0 +1,22 @@
+{
+  "check_id": "mcp.protocol.error_schema",
+  "category": "protocol",
+  "title": "Error 响应 schema 符合性检查",
+  "operations": [
+    "tools/call",
+    "resources/read"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "error_code_mandatory",
+    "error_message_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:fbbf2fbdd2b512c3f03801c936b2aed707fc9177f2eec6dac878c63f7fac415a",
+  "version": "0.8.0"
+}

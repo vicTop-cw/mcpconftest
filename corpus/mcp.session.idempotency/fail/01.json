@@ -1,0 +1,18 @@
+{
+  "check_id": "mcp.session.idempotency",
+  "kind": "fail",
+  "desc": "违规：重复调用结果不同",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "x"
+        }
+      ]
+    }
+  }
+}

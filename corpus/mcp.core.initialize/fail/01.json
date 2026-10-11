@@ -1,0 +1,19 @@
+{
+  "check_id": "mcp.core.initialize",
+  "kind": "fail",
+  "desc": "违规：protocolVersion 不匹配期望",
+  "request": {
+    "method": "initialize",
+    "protocolVersion": "2025-01-01"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "serverInfo": {
+        "name": "demo",
+        "version": "1.0"
+      },
+      "protocolVersion": "2025-01-01"
+    }
+  }
+}

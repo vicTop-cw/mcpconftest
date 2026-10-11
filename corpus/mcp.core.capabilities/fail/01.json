@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.core.capabilities",
+  "kind": "fail",
+  "desc": "违规：未声明 capabilities",
+  "request": {
+    "method": "initialize"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "serverInfo": {
+        "name": "demo"
+      }
+    }
+  }
+}

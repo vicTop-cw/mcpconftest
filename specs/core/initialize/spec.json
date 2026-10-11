@@ -1,0 +1,25 @@
+{
+  "check_id": "mcp.core.initialize",
+  "category": "core",
+  "title": "initialize 握手检查",
+  "operations": [
+    "initialize",
+    "server_info",
+    "protocol_version"
+  ],
+  "preconditions": [
+    "server_is_stdio",
+    "config_loaded"
+  ],
+  "laws": [
+    "jsonrpc_2.0_mandatory",
+    "server_info_mandatory",
+    "protocol_version_mandatory"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:815d5f0ceb84217cbcfa58b3fd288acf0e5cdbead9435303a81cc5f13007898c",
+  "version": "0.8.0"
+}

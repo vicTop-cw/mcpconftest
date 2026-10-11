@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.resources.read_error",
+  "category": "resources",
+  "title": "resources/read 错误路径检查",
+  "operations": [
+    "resources/read"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "missing_resource_must_error_32602"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:8c5fcd90bb5991289c973e2719765219ec9a3c037fae275d433724f1386e579e",
+  "version": "0.8.0"
+}

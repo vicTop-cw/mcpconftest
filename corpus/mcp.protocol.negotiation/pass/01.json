@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.protocol.negotiation",
+  "kind": "pass",
+  "desc": "合规：协议版本矩阵全部兼容",
+  "request": {
+    "method": "initialize",
+    "protocolVersion": "2026-07-28"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "protocolVersion": "2026-07-28"
+    }
+  }
+}

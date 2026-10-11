@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.transport.keepalive",
+  "kind": "fail",
+  "desc": "违规：后续调用会话中断",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32000,
+      "message": "connection lost"
+    }
+  }
+}

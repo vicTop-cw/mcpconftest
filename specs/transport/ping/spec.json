@@ -1,0 +1,20 @@
+{
+  "check_id": "mcp.transport.ping",
+  "category": "transport",
+  "title": "ping 保活检查",
+  "operations": [
+    "ping"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "ping_must_succeed"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:cb3dac0c70f207979b7d2315ed116db46e00e5024c8404435a53d4f346095a0e",
+  "version": "0.8.0"
+}

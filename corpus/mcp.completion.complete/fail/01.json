@@ -1,0 +1,19 @@
+{
+  "check_id": "mcp.completion.complete",
+  "kind": "fail",
+  "desc": "违规：completion 缺 result",
+  "request": {
+    "method": "completion/complete",
+    "ref": {
+      "name": "x"
+    },
+    "argument": ""
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32601,
+      "message": "not found"
+    }
+  }
+}

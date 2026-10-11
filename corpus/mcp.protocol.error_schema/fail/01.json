@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.protocol.error_schema",
+  "kind": "fail",
+  "desc": "违规：error 缺 message",
+  "request": {
+    "method": "tools/call"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32601
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "check_id": "mcp.prompts.list",
+  "kind": "fail",
+  "desc": "违规：prompt 缺 name",
+  "request": {
+    "method": "prompts/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "prompts": [
+        {
+          "description": "no name"
+        }
+      ]
+    }
+  }
+}

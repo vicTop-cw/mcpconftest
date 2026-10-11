@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.session.idempotency",
+  "category": "session",
+  "title": "重复请求幂等性检查",
+  "operations": [
+    "tools/list",
+    "resources/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "identical_request_identical_result"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:6a3bc37f508c0437bdb081765f746536e299517b755c739976cdcfbd4cca78a2",
+  "version": "0.8.0"
+}

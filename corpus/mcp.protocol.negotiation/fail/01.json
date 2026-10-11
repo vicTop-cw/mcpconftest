@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.protocol.negotiation",
+  "kind": "fail",
+  "desc": "违规：拒绝协商版本",
+  "request": {
+    "method": "initialize",
+    "protocolVersion": "2026-07-28"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32602,
+      "message": "unsupported version"
+    }
+  }
+}

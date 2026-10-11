@@ -1,0 +1,23 @@
+{
+  "check_id": "mcp.protocol.batch",
+  "category": "protocol",
+  "title": "JSON-RPC 批量请求处理检查",
+  "operations": [
+    "tools/list",
+    "resources/list",
+    "prompts/list"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "batch_requests_handled",
+    "batch_responses_ordered"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:f3c1378a19cbec7900f0a891b2dcbc4e81c983972c6edd9d3a302e65fd541604",
+  "version": "0.8.0"
+}

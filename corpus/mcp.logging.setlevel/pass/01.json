@@ -1,0 +1,13 @@
+{
+  "check_id": "mcp.logging.setlevel",
+  "kind": "pass",
+  "desc": "合规：setLevel 正常响应",
+  "request": {
+    "method": "logging/setLevel",
+    "level": "info"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {}
+  }
+}

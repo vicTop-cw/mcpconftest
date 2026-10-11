@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.resources.read_error",
+  "kind": "fail",
+  "desc": "违规：缺失资源返回成功",
+  "request": {
+    "method": "resources/read",
+    "uri": "file:///missing.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "content": "x"
+    }
+  }
+}

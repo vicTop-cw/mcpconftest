@@ -1,0 +1,19 @@
+{
+  "check_id": "mcp.tools.list",
+  "kind": "pass",
+  "desc": "合规：tools 数组含 name/description",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "echo",
+          "description": "echo input"
+        }
+      ]
+    }
+  }
+}

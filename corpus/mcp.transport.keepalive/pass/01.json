@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.transport.keepalive",
+  "kind": "pass",
+  "desc": "合规：连续多次调用会话稳定",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

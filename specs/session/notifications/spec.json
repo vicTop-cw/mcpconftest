@@ -1,0 +1,22 @@
+{
+  "check_id": "mcp.session.notifications",
+  "category": "session",
+  "title": "未知通知后会话活性检查",
+  "operations": [
+    "notifications/initialized",
+    "ping"
+  ],
+  "preconditions": [
+    "server_is_stdio"
+  ],
+  "laws": [
+    "unknown_notification_ignored",
+    "session_liveness_kept"
+  ],
+  "backends": [
+    "js",
+    "native"
+  ],
+  "fingerprint": "sha256:c3605f1be7e38ff281aa74ff6f6e0084285de923982b07424121e65252da1cba",
+  "version": "0.8.0"
+}

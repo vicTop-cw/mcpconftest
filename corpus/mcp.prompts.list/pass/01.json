@@ -1,0 +1,18 @@
+{
+  "check_id": "mcp.prompts.list",
+  "kind": "pass",
+  "desc": "合规：prompts 数组含 name",
+  "request": {
+    "method": "prompts/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "prompts": [
+        {
+          "name": "greet"
+        }
+      ]
+    }
+  }
+}
