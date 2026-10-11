@@ -31,7 +31,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$script:EmbeddedVersion = "0.7.0"
+$script:EmbeddedVersion = "0.8.0"
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -61,10 +61,21 @@ function Get-UrlTo([string]$Url, [string]$OutFile, [int]$Sec) {
 }
 
 # ---- 版本解析 ----
+# GitCode/AtomGit 匿名 raw 直链实测返回 HTML 或「暂不支持预览」；匿名 contents API
+# 返回 base64 JSON，可解码后按文本解析 version（GitHub raw 可能超时，保留作最后兜底）。
+function ConvertFrom-ContentsApi([string]$Json) {
+  if ($Json -match '"encoding"\s*:\s*"base64"') {
+    try {
+      $o = $Json | ConvertFrom-Json
+      if ($o.content) { return [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($o.content -replace '\s', ''))) }
+    } catch { }
+  }
+  return $Json
+}
 $rawUrls = @(
-  "https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/moon.mod",
-  "https://gitcode.com/VictorTop/mcpconftest/-/raw/main/moon.mod",
-  "https://atomgit.com/VictorTop/mcpconftest/raw/main/moon.mod"
+  "https://api.gitcode.com/api/v5/repos/VictorTop/mcpconftest/contents/moon.mod?ref=main",
+  "https://api.atomgit.com/api/v5/repos/VictorTop/mcpconftest/contents/moon.mod?ref=main",
+  "https://raw.githubusercontent.com/VictorTop/mcpconftest/main/moon.mod"
 )
 if ($BaseUrl -ne "") { $rawUrls = @(($BaseUrl.TrimEnd('/') + "/moon.mod")) }
 $versionSource = "命令行参数"
@@ -76,6 +87,7 @@ if ($Version -eq "") {
       try {
         $mm = (Invoke-WebRequest -Uri $r -UseBasicParsing -TimeoutSec 20).Content
         if ($mm -isnot [string]) { $mm = [Text.Encoding]::UTF8.GetString($mm) }
+        $mm = ConvertFrom-ContentsApi $mm
         if ($mm -match '^\s*<(!DOCTYPE|html)') {
           Write-Host "  . $r 返回 HTML 页而不是文件（该源不可用作 raw 直链）" -ForegroundColor DarkGray
           continue
@@ -86,7 +98,7 @@ if ($Version -eq "") {
         $why = ($_.Exception.Message -replace '\s+', ' ')
         if (-not $_.Exception.Response) {
           $tmp = [IO.Path]::GetTempFileName()
-          if (Get-UrlTo $r $tmp 20) { $mm = [IO.File]::ReadAllText($tmp, [Text.Encoding]::UTF8) }
+          if (Get-UrlTo $r $tmp 20) { $mm = ConvertFrom-ContentsApi ([IO.File]::ReadAllText($tmp, [Text.Encoding]::UTF8)) }
           Remove-Item $tmp -Force -ErrorAction SilentlyContinue
           if ($mm) {
             if ($mm -match '^\s*<(!DOCTYPE|html)') { Write-Host "  . $r （curl 臂）返回 HTML 页而不是文件" -ForegroundColor DarkGray; continue }

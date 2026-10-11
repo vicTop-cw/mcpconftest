@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-EMBEDDED_VERSION="0.7.0"
+EMBEDDED_VERSION="0.8.0"
 
 VERSION="${MCP_VERSION:-}"
 FORCE=""
@@ -24,7 +24,7 @@ for arg in "$@"; do
   esac
 done
 
-RAW_MOONMODS="https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/moon.mod https://gitcode.com/VictorTop/mcpconftest/-/raw/main/moon.mod https://atomgit.com/VictorTop/mcpconftest/raw/main/moon.mod"
+RAW_MOONMODS="https://api.gitcode.com/api/v5/repos/VictorTop/mcpconftest/contents/moon.mod?ref=main https://api.atomgit.com/api/v5/repos/VictorTop/mcpconftest/contents/moon.mod?ref=main https://raw.githubusercontent.com/VictorTop/mcpconftest/main/moon.mod"
 if [ -n "${MCP_BASE_URL:-}" ]; then
   MCP_BASE_URL="${MCP_BASE_URL%/}"
   RAW_MOONMODS="${MCP_BASE_URL}/moon.mod"
@@ -44,6 +44,11 @@ if [ -z "$VERSION" ]; then
       "<"!DOCTYPE*|"<"doctype*|"<"html*)
         echo "  . $r 返回 HTML 页而不是文件（该源不可用作 raw 直链）" >&2; continue ;;
     esac
+    # GitCode/AtomGit contents API 返回 base64 JSON：先解码出文件文本
+    if printf '%s' "$mm" | grep -q '"encoding"[[:space:]]*:[[:space:]]*"base64"'; then
+      mm=$(printf '%s' "$mm" | sed -n 's/.*"content"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tr -d '
+' | base64 -d 2>/dev/null) || continue
+    fi
     VERSION=$(printf '%s' "$mm" | sed -n 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
     if [ -n "$VERSION" ]; then VERSION_SOURCE="$r"; break; fi
   done
