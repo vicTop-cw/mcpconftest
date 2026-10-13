@@ -57,7 +57,7 @@
   {
     "check_id": "mcp.protocol.negotiation",
     "category": "protocol",
-    "fingerprint": "sha256:13e3212181d481d3e29f98389721d909b93f16d3544ca37f0558532ee3469e26"
+    "fingerprint": "sha256:5d2daed0366848e9c471a325a57c4982904cceedae1f2b0ee925c334d518f44d"
   },
   {
     "check_id": "mcp.logging.setlevel",
@@ -93,5 +93,50 @@
     "check_id": "mcp.protocol.error_schema",
     "category": "protocol",
     "fingerprint": "sha256:fbbf2fbdd2b512c3f03801c936b2aed707fc9177f2eec6dac878c63f7fac415a"
+  },
+  {
+    "check_id": "mcp.stateless.discover",
+    "category": "stateless",
+    "fingerprint": "sha256:496c25d728d6f9bfd620e5d110b487b2a3ce05414a294a38f78be99f65991a38"
+  },
+  {
+    "check_id": "mcp.stateless.version_negotiation",
+    "category": "stateless",
+    "fingerprint": "sha256:0958cf5f705cd5ddb92ce351b2faa915a5d71a74195a47107327db8f09b5ab4c"
+  },
+  {
+    "check_id": "mcp.stateless.self_describing",
+    "category": "stateless",
+    "fingerprint": "sha256:fb369c5953eea41685903ea6f0bde26feaaa0f820cae7f0b14ec7e18de73bb2e"
+  },
+  {
+    "check_id": "mcp.stateless.missing_capability",
+    "category": "stateless",
+    "fingerprint": "sha256:81485e6c9c2a808d5287cdfc70b4aa4f43030821dbd5f440001b9271532dd1a7"
+  },
+  {
+    "check_id": "mcp.stateless.list_cache",
+    "category": "stateless",
+    "fingerprint": "sha256:da0b7bf643efae4fe7d98966baa73efd317adb63a80e9a23059a9dcca616041c"
+  },
+  {
+    "check_id": "mcp.stateless.schema_2020_12",
+    "category": "stateless",
+    "fingerprint": "sha256:08a4cf76d83367335119447d057fc54666b093170403984fc5a8a3805bc7a027"
+  },
+  {
+    "check_id": "mcp.stateless.resource_error_code",
+    "category": "stateless",
+    "fingerprint": "sha256:369275b262ed28150358da1d6cf43b6716e5712601daac8cde16fb6f739e40b6"
+  },
+  {
+    "check_id": "mcp.stateless.mrtr",
+    "category": "stateless",
+    "fingerprint": "sha256:dbfc5eb4428b8649a94029a58863ee5383ec39796914fc8a0eb44502f17604a1"
+  },
+  {
+    "check_id": "mcp.stateless.deprecations",
+    "category": "stateless",
+    "fingerprint": "sha256:a450f6d74efc57f47477e0847a0a445dc0ef0fda5d459fd52b3001dfe7285f9a"
   }
 ]

@@ -10,3 +10,5 @@ _release/
 
 
 dep.log
+temp/
+trace.json

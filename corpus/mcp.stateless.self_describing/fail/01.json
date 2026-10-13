@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.stateless.self_describing",
+  "kind": "fail",
+  "desc": "违规：缺 _meta.protocolVersion 的请求被正常处理（未按 INVALID_PARAMS 拒绝）",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

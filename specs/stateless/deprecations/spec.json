@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.deprecations",
+    "category":  "stateless",
+    "title":  "弃用能力标注检查（Roots/Sampling/Logging）",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:a450f6d74efc57f47477e0847a0a445dc0ef0fda5d459fd52b3001dfe7285f9a"
+}

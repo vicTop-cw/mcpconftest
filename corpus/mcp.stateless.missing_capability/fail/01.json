@@ -1,0 +1,21 @@
+{
+  "check_id": "mcp.stateless.missing_capability",
+  "kind": "fail",
+  "desc": "违规：客户端未声明所需能力时 server 仍直接执行成功",
+  "request": {
+    "method": "tools/call",
+    "name": "needs_sampling",
+    "arguments": {}
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "ok"
+        }
+      ]
+    }
+  }
+}

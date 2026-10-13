@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 9f2a11add43fbf12a546606fb2b962ab_099086bdc6d811f197b3525400248c00
+    ReservedCode1: yk7X3aN7JNUaJMtzlgn0iuUpQ9Z34d7yaNugqcUVrMSRoy6XH3RT6SFbUN8CDJDJ+JYXEOdLNm334LgwHUysKyQqmxlSw/zdQPPDnBvXbz3k0Yd5TpmLDgRNsCEbcFCwNhH5BTngZ5j8lKutuhwFWKvQ5fl7lXWQl6YsE3VAg6t88AHCHoI2OJr1rUg=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 9f2a11add43fbf12a546606fb2b962ab_099086bdc6d811f197b3525400248c00
+    ReservedCode2: yk7X3aN7JNUaJMtzlgn0iuUpQ9Z34d7yaNugqcUVrMSRoy6XH3RT6SFbUN8CDJDJ+JYXEOdLNm334LgwHUysKyQqmxlSw/zdQPPDnBvXbz3k0Yd5TpmLDgRNsCEbcFCwNhH5BTngZ5j8lKutuhwFWKvQ5fl7lXWQl6YsE3VAg6t88AHCHoI2OJr1rUg=
+---
+
 # mcpconftest
 
 MCP protocol conformance probe — checks any MCP server (stdio or WebSocket) against the spec.
@@ -111,7 +122,7 @@ mcpconftest serve                                         # MCP server 形态（
 检查项不再硬编码：以 `specs/`（Markdown + JSON）为单一真源，
 引擎在运行时读取规格动态装配 `list-checks`。
 
-- `specs/` — 19 类检查项的机读规格（operations / preconditions / laws / fingerprint sha256）
+- `specs/` — 28 类检查项的机读规格（operations / preconditions / laws / fingerprint sha256）
 - `laws/iron-laws.md` — 五条铁律：
   - **L1 规格即真源**：list-checks 必须与 specs 一致（门禁 `scripts/verify-specs.ps1`）
   - **L2 双端共识**：js/native 两后端检查清单输出必须一致（CI 门禁）
@@ -144,7 +155,7 @@ Every run writes to the report directory:
 
 ## Check categories (v1.0, spec-driven)
 
-19 类检查项由 `specs/` 单一真源驱动（运行时装配 + sha256 指纹）。
+28 类检查项由 `specs/` 单一真源驱动（运行时装配 + sha256 指纹）。
 
 - **initialize** — jsonrpc, server_info, protocol_version
 - **capabilities** — response structure
@@ -163,6 +174,18 @@ Every run writes to the report directory:
 - **batch** — JSON-RPC batch request handling
 - **id_matching** — JSON-RPC id matching between request and response
 - **error_schema** — Error response schema conformance (code/message)
+
+### stateless (2026-07-28 无状态核心)
+
+- **server/discover** — 无状态能力发现（supportedVersions / capabilities / serverInfo）
+- **version_negotiation** — 版本协商内联化（-32022 + data.supported）
+- **self_describing** — 每请求自描述 _meta（protocolVersion / clientInfo / clientCapabilities）
+- **missing_capability** — 缺失客户端能力返回 -32021（MissingRequiredClientCapabilityError）
+- **list_cache** — 列表结果缓存提示（ttlMs / cacheScope）
+- **schema_2020_12** — Tools 完整 JSON Schema 2020-12 合规（oneOf / anyOf / allOf / $ref）
+- **resource_error_code** — 资源未找到错误码 -32602（替代旧 -32002）
+- **mrtr** — MRTR input_required 往返（resultType / requests / inputResponses）
+- **deprecations** — Roots / Sampling / Logging 弃用能力标注
 
 ## Transport support
 
@@ -200,7 +223,7 @@ Gates: `moon check` + `moon test` + e2e fixture regression（GitHub Actions 另�
 ## Project layout
 
 ```
-specs/             — 19 类检查项机读规格（单一真源，含 sha256 指纹）
+specs/             — 28 类检查项机读规格（单一真源，含 sha256 指纹）
 laws/iron-laws.md  — 五条铁律（L1-L5）
 corpus/            — 每类检查项 pass/fail 语料（负向测试强制）
 src/lib/
@@ -211,7 +234,7 @@ src/lib/
   session_io_native.mbt — native 后端实现（spawn 子进程真实 stdio + async/websocket 真实 WS）
   specs.mbt       — 规格驱动装配（list_checks_spec，优先规格回退静态）
   fist_ops.mbt    — FIST-Mbt 库级嵌入（mcpcf.* 七工具 + 数据目录隔离）
-  checks.mbt      — 19 conformance check categories
+  checks.mbt      — 28 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)
   server.mbt      — MCP server（serve：version / run_probe / list_checks）
@@ -240,3 +263,4 @@ MIT
 ## 仓库同步
 
 - **同步/发布只需推 GitCode 即可**：https://gitcode.com/VictorTop/mcpconftest —— GitHub 镜像（https://github.com/vicTop-cw/mcpconftest）由 CI 自动同步（GitCode 根目录 `.sync-to-github` 开关控制，只增不删，以 GitCode 为源覆盖同名分支），**无需手动推送 GitHub，也不要直接改动 GitHub 镜像**。
+*（内容由AI生成，仅供参考）*

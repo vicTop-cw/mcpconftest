@@ -1,0 +1,26 @@
+{
+  "check_id": "mcp.stateless.discover",
+  "kind": "pass",
+  "desc": "合规：server/discover 返回 supportedVersions/capabilities/serverInfo",
+  "request": {
+    "method": "server/discover"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "supportedVersions": [
+        "2026-07-28"
+      ],
+      "capabilities": {
+        "tools": {},
+        "resources": {},
+        "prompts": {}
+      },
+      "serverInfo": {
+        "name": "mcp-server",
+        "version": "1.0.0"
+      },
+      "instructions": "server usage instructions"
+    }
+  }
+}

@@ -107,6 +107,15 @@ pub fn list_checks_spec() -> Array[String] {
       "error_schema — Error response schema conformance (code/message)",
       "resources_read_error — resources/read error path (-32602 / missing resource)",
       "notifications_initialized — initialized notification handling",
+      "stateless/server_discover — server/discover implemented (SEP-2575)",
+      "stateless/version_negotiation — inline -32022 negotiation (SEP-2575)",
+      "stateless/self_describing — per-request _meta required (SEP-2575)",
+      "stateless/missing_capability — -32021 required capability (SEP-2575)",
+      "stateless/list_cache — ttlMs + cacheScope on list results (SEP-2549)",
+      "stateless/schema_2020_12 — full JSON Schema 2020-12 (SEP-2106)",
+      "stateless/resource_error_code — -32602 resource error (SEP-2164)",
+      "stateless/mrtr — input_required round-trip (SEP-2322)",
+      "stateless/deprecations — deprecated capability annotation (SEP-2577)",
     ]
   }
   let out : Array[String] = []

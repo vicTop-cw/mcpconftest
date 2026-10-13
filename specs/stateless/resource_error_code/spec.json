@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.resource_error_code",
+    "category":  "stateless",
+    "title":  "资源未找到错误码检查（-32602）",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:369275b262ed28150358da1d6cf43b6716e5712601daac8cde16fb6f739e40b6"
+}

@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.stateless.discover",
+  "kind": "fail",
+  "desc": "违规：server/discover 未实现（-32601），违反 2026-07-28 规范 MUST 要求",
+  "request": {
+    "method": "server/discover"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32601,
+      "message": "Method not found"
+    }
+  }
+}

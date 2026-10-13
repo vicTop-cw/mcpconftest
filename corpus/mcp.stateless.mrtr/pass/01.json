@@ -1,0 +1,32 @@
+{
+  "check_id": "mcp.stateless.mrtr",
+  "kind": "pass",
+  "desc": "合规：tools/call 返回 resultType=input_required 且 requests 列出问题；重试带 inputResponses 完成",
+  "request": {
+    "method": "tools/call",
+    "name": "delete_resource",
+    "arguments": {},
+    "inputResponses": {
+      "confirm": "yes"
+    }
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "deleted"
+        }
+      ],
+      "resultType": "input_required",
+      "requests": [
+        {
+          "requestId": "r1",
+          "type": "confirmation",
+          "message": "confirm?"
+        }
+      ]
+    }
+  }
+}

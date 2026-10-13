@@ -1,0 +1,23 @@
+{
+  "check_id": "mcp.stateless.schema_2020_12",
+  "kind": "fail",
+  "desc": "违规：工具 inputSchema 根类型非 object，或含外部 $ref URI 自动解引用",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "t1",
+          "description": "d",
+          "inputSchema": {
+            "type": "string",
+            "$ref": "https://example.com/schema.json"
+          }
+        }
+      ]
+    }
+  }
+}

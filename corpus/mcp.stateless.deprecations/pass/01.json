@@ -1,0 +1,25 @@
+{
+  "check_id": "mcp.stateless.deprecations",
+  "kind": "pass",
+  "desc": "合规：声明 sampling 能力时带 deprecated 标注；logging/setLevel 在新协议路径被拒",
+  "request": {
+    "method": "server/discover"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "supportedVersions": [
+        "2026-07-28"
+      ],
+      "capabilities": {
+        "sampling": {
+          "deprecated": true
+        }
+      },
+      "serverInfo": {
+        "name": "mcp-server",
+        "version": "1.0.0"
+      }
+    }
+  }
+}

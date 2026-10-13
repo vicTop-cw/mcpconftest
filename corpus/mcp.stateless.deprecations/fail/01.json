@@ -1,0 +1,24 @@
+{
+  "check_id": "mcp.stateless.deprecations",
+  "kind": "fail",
+  "desc": "违规：声明 Roots/Sampling/Logging 弃用能力但未带 deprecated 标注",
+  "request": {
+    "method": "server/discover"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "supportedVersions": [
+        "2026-07-28"
+      ],
+      "capabilities": {
+        "sampling": {},
+        "roots": {}
+      },
+      "serverInfo": {
+        "name": "mcp-server",
+        "version": "1.0.0"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.stateless.resource_error_code",
+  "kind": "pass",
+  "desc": "合规：资源未找到返回 JSON-RPC 标准 -32602 Invalid Params",
+  "request": {
+    "method": "resources/read",
+    "uri": "file:///missing.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32602,
+      "message": "Resource not found"
+    }
+  }
+}

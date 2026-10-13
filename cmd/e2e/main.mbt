@@ -52,6 +52,29 @@ async fn run_fixture() -> ProbeRun {
   push_all(results, r11)
   let r12 = @lib.check_protocol_negotiation(session)
   push_all(results, r12)
+  // 2026-07-28 stateless core checks.
+  let r20 = @lib.check_stateless_discover(session)
+  push_all(results, r20)
+  let r21 = @lib.check_stateless_version_negotiation(session)
+  push_all(results, r21)
+  let r22 = @lib.check_stateless_self_describing(session)
+  push_all(results, r22)
+  let r23 = @lib.check_stateless_missing_capability(session)
+  push_all(results, r23)
+  let r24 = @lib.check_stateless_list_cache(session)
+  push_all(results, r24)
+  let r25 = @lib.check_stateless_schema_2020_12(session)
+  push_all(results, r25)
+  let r26 = @lib.check_stateless_resource_error_code(session)
+  push_all(results, r26)
+  let r27 = @lib.check_stateless_mrtr(session)
+  push_all(results, r27)
+  let r28 = @lib.check_stateless_deprecations(session)
+  push_all(results, r28)
+  let stateless_err = count_err(r20) + count_err(r21) + count_err(r22) +
+    count_err(r23) + count_err(r24) + count_err(r25) +
+    count_err(r26) + count_err(r27) + count_err(r28)
+  if stateless_err > 0 { ok = false }
   ignore(session.close())
   println("[fixture] \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail")
   { ok, results }
@@ -101,6 +124,29 @@ async fn probe_server(cmd : String) -> ProbeRun {
   push_all(results, r11)
   let r12 = @lib.check_protocol_negotiation(session)
   push_all(results, r12)
+  // 2026-07-28 stateless core checks.
+  let r20 = @lib.check_stateless_discover(session)
+  push_all(results, r20)
+  let r21 = @lib.check_stateless_version_negotiation(session)
+  push_all(results, r21)
+  let r22 = @lib.check_stateless_self_describing(session)
+  push_all(results, r22)
+  let r23 = @lib.check_stateless_missing_capability(session)
+  push_all(results, r23)
+  let r24 = @lib.check_stateless_list_cache(session)
+  push_all(results, r24)
+  let r25 = @lib.check_stateless_schema_2020_12(session)
+  push_all(results, r25)
+  let r26 = @lib.check_stateless_resource_error_code(session)
+  push_all(results, r26)
+  let r27 = @lib.check_stateless_mrtr(session)
+  push_all(results, r27)
+  let r28 = @lib.check_stateless_deprecations(session)
+  push_all(results, r28)
+  let stateless_err = count_err(r20) + count_err(r21) + count_err(r22) +
+    count_err(r23) + count_err(r24) + count_err(r25) +
+    count_err(r26) + count_err(r27) + count_err(r28)
+  if stateless_err > 0 { ok = false }
   ignore(session.close())
   println("[target] \{cmd}: \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail, \{count_err(results)} err")
   { ok, results }
@@ -123,7 +169,7 @@ fn count(results : Array[@lib.CheckResult], sev : String) -> Int {
 fn count_err(results : Array[@lib.CheckResult]) -> Int {
   let mut n = 0
   for r in results {
-    if r.name.contains("timeout") || r.name.contains("parse") {
+    if r.name.has_suffix(".timeout") || (r.name.has_suffix(".parse") && r.severity == @lib.Fail) {
       n += 1
     }
   }

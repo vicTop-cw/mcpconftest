@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.stateless.list_cache",
+  "kind": "pass",
+  "desc": "合规：tools/list 响应携带 ttlMs 与 cacheScope 缓存提示",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [],
+      "ttlMs": 30000,
+      "cacheScope": "connection"
+    }
+  }
+}

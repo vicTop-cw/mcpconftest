@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.mrtr",
+    "category":  "stateless",
+    "title":  "MRTR input_required 往返检查",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:dbfc5eb4428b8649a94029a58863ee5383ec39796914fc8a0eb44502f17604a1"
+}

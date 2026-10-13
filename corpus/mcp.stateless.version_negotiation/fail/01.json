@@ -1,0 +1,15 @@
+{
+  "check_id": "mcp.stateless.version_negotiation",
+  "kind": "fail",
+  "desc": "违规：server 接受不支持协议版本并正常处理（未内联协商）",
+  "request": {
+    "method": "tools/list",
+    "protocolVersion": "2099-01-01"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

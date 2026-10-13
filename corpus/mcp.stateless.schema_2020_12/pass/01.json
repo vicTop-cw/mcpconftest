@@ -1,0 +1,40 @@
+{
+  "check_id": "mcp.stateless.schema_2020_12",
+  "kind": "pass",
+  "desc": "合规：工具 inputSchema 根为 object 且支持 oneOf 组合与内部 $defs/$ref",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "t1",
+          "description": "d",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            },
+            "$defs": {
+              "ref1": {
+                "type": "string"
+              }
+            },
+            "$ref": "#/$defs/ref1"
+          }
+        }
+      ]
+    }
+  }
+}

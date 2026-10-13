@@ -37,6 +37,40 @@ pub async fn Session::new_ws(url : String) -> Session {
   { next_id: 1, alive: handle_id >= 0, handle_id, transport: WebSocket }
 }
 
+///| Inject the default per-request self-description into params. 2026-07-28
+///| requires every request to carry protocol version / client identity /
+///| client capabilities in `_meta`; existing _meta keys are preserved.
+fn fill_meta(params : Json) -> Json {
+  let base_meta = Json::object({
+    "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28"),
+    "io.modelcontextprotocol/clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }),
+    "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+  })
+  match params {
+    Json::Object(m) => {
+      let m2 = m.copy()
+      match m2.get("_meta") {
+        Some(Json::Object(meta)) => {
+          let meta2 = meta.copy()
+          if meta2.get("io.modelcontextprotocol/protocolVersion") is None {
+            meta2.set("io.modelcontextprotocol/protocolVersion", Json::string("2026-07-28"))
+          }
+          if meta2.get("io.modelcontextprotocol/clientInfo") is None {
+            meta2.set("io.modelcontextprotocol/clientInfo", Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }))
+          }
+          if meta2.get("io.modelcontextprotocol/clientCapabilities") is None {
+            meta2.set("io.modelcontextprotocol/clientCapabilities", Json::object({}))
+          }
+          m2.set("_meta", Json::object(meta2))
+        }
+        _ => m2.set("_meta", base_meta)
+      }
+      Json::object(m2)
+    }
+    _ => Json::object({ "_meta": base_meta })
+  }
+}
+
 ///| Send a JSON-RPC request, wait for response with timeout.
 pub async fn Session::request(
   self : Session,
@@ -48,37 +82,21 @@ pub async fn Session::request(
   self.next_id += 1
   let req_str = match self.transport {
     Stdio => {
-      (match params {
-        Json::Object(m) => {
-          let m2 = m.copy()
-          if m2.get("_meta") is Some(_) {
-            ()
-          } else {
-            m2.set("_meta", Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }))
-          }
-          Json::object({
-            "jsonrpc": Json::string("2.0"),
-            "id": Json::number(id.to_double()),
-            "method": Json::string(meth),
-            "params": Json::object(m2),
-          }).stringify()
-        }
-        _ => Json::object({
-          "jsonrpc": Json::string("2.0"),
-          "id": Json::number(id.to_double()),
-          "method": Json::string(meth),
-          "params": Json::object({
-            "_meta": Json::object({ "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28") }),
-          }),
-        }).stringify()
-      }) + "\n"
-    }
-    WebSocket => {
+      let params2 = fill_meta(params)
       Json::object({
         "jsonrpc": Json::string("2.0"),
         "id": Json::number(id.to_double()),
         "method": Json::string(meth),
-        "params": params,
+        "params": params2,
+      }).stringify() + "\n"
+    }
+    WebSocket => {
+      let params2 = fill_meta(params)
+      Json::object({
+        "jsonrpc": Json::string("2.0"),
+        "id": Json::number(id.to_double()),
+        "method": Json::string(meth),
+        "params": params2,
       }).stringify()
     }
   }

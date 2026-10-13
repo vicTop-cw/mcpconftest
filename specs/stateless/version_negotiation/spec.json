@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.version_negotiation",
+    "category":  "stateless",
+    "title":  "无状态内联版本协商检查（-32022）",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:0958cf5f705cd5ddb92ce351b2faa915a5d71a74195a47107327db8f09b5ab4c"
+}

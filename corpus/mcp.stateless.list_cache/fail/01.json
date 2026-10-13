@@ -1,0 +1,14 @@
+{
+  "check_id": "mcp.stateless.list_cache",
+  "kind": "fail",
+  "desc": "违规：tools/list 响应缺少 ttlMs/cacheScope 缓存提示",
+  "request": {
+    "method": "tools/list"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

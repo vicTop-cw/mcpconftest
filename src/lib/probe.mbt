@@ -37,11 +37,11 @@ pub fn count(results : Array[CheckResult], sev : String) -> Int {
   n
 }
 
-///| Count transport-level errors (timeout / parse / write failures).
+///| Count transport-level errors (timeout / parse failures).
 pub fn count_err(results : Array[CheckResult]) -> Int {
   let mut n = 0
   for r in results {
-    if r.name.contains("timeout") || r.name.contains("parse") {
+    if r.name.has_suffix(".timeout") || (r.name.has_suffix(".parse") && r.severity == Fail) {
       n += 1
     }
   }
@@ -104,6 +104,30 @@ pub async fn run_fixture() -> ProbeRun {
   let r19 = timed_check(async fn() { check_error_schema(session) })
   push_all(results, r19)
   if count(r19, "fail") > 0 { ok = false }
+  // 2026-07-28 stateless core checks — the fixture is a legacy stateful
+  // server, so violations here are expected (they prove detection works).
+  let r20 = timed_check(async fn() { check_stateless_discover(session) })
+  push_all(results, r20)
+  let r21 = timed_check(async fn() { check_stateless_version_negotiation(session) })
+  push_all(results, r21)
+  let r22 = timed_check(async fn() { check_stateless_self_describing(session) })
+  push_all(results, r22)
+  let r23 = timed_check(async fn() { check_stateless_missing_capability(session) })
+  push_all(results, r23)
+  let r24 = timed_check(async fn() { check_stateless_list_cache(session) })
+  push_all(results, r24)
+  let r25 = timed_check(async fn() { check_stateless_schema_2020_12(session) })
+  push_all(results, r25)
+  let r26 = timed_check(async fn() { check_stateless_resource_error_code(session) })
+  push_all(results, r26)
+  let r27 = timed_check(async fn() { check_stateless_mrtr(session) })
+  push_all(results, r27)
+  let r28 = timed_check(async fn() { check_stateless_deprecations(session) })
+  push_all(results, r28)
+  let stateless_err = count_err(r20) + count_err(r21) + count_err(r22) +
+    count_err(r23) + count_err(r24) + count_err(r25) +
+    count_err(r26) + count_err(r27) + count_err(r28)
+  if stateless_err > 0 { ok = false }
   ignore(session.close())
   println("[fixture] \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail")
   { ok, results, cmd }
@@ -171,6 +195,30 @@ pub async fn probe_server(cmd : String) -> ProbeRun {
   let r19 = timed_check(async fn() { check_error_schema(session) })
   push_all(results, r19)
   if count_err(r19) > 0 { ok = false }
+  // 2026-07-28 stateless core checks: violations are hard fails; transport
+  // errors (timeout / parse) also invalidate the run.
+  let r20 = timed_check(async fn() { check_stateless_discover(session) })
+  push_all(results, r20)
+  let r21 = timed_check(async fn() { check_stateless_version_negotiation(session) })
+  push_all(results, r21)
+  let r22 = timed_check(async fn() { check_stateless_self_describing(session) })
+  push_all(results, r22)
+  let r23 = timed_check(async fn() { check_stateless_missing_capability(session) })
+  push_all(results, r23)
+  let r24 = timed_check(async fn() { check_stateless_list_cache(session) })
+  push_all(results, r24)
+  let r25 = timed_check(async fn() { check_stateless_schema_2020_12(session) })
+  push_all(results, r25)
+  let r26 = timed_check(async fn() { check_stateless_resource_error_code(session) })
+  push_all(results, r26)
+  let r27 = timed_check(async fn() { check_stateless_mrtr(session) })
+  push_all(results, r27)
+  let r28 = timed_check(async fn() { check_stateless_deprecations(session) })
+  push_all(results, r28)
+  let stateless_err = count_err(r20) + count_err(r21) + count_err(r22) +
+    count_err(r23) + count_err(r24) + count_err(r25) +
+    count_err(r26) + count_err(r27) + count_err(r28)
+  if stateless_err > 0 { ok = false }
   ignore(session.close())
   println("[target] \{cmd}: \{count(results, "pass")}/\{results.length()} pass, \{count(results, "fail")} fail, \{count_err(results)} err")
   { ok, results, cmd }

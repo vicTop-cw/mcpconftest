@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.list_cache",
+    "category":  "stateless",
+    "title":  "列表缓存提示检查（ttlMs/cacheScope）",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:da0b7bf643efae4fe7d98966baa73efd317adb63a80e9a23059a9dcca616041c"
+}

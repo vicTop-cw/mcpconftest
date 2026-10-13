@@ -67,22 +67,25 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
     "run_probe",
     "Run the MCP protocol conformance probe against one or more servers. Parameters: servers (array of launch command strings, e.g. [\"node server.js\"]), report_dir (directory for report files), junit (boolean, also write JUnit XML). Returns JSON with per-server pass/fail/skip/warn counts, failed check names, and report path.",
     Json::object({
-      "servers": Json::object({
-        "type": Json::string("array"),
-        "items": Json::object({"type": Json::string("string")}),
-        "description": Json::string(
-          "Server launch commands, e.g. [\"node server.js\"]",
-        ),
-      }),
-      "report_dir": Json::object({
-        "type": Json::string("string"),
-        "description": Json::string(
-          "Directory to write report files (report.json/md/html, optional JUnit)",
-        ),
-      }),
-      "junit": Json::object({
-        "type": Json::string("boolean"),
-        "description": Json::string("Also write report-junit.xml"),
+      "type": Json::string("object"),
+      "properties": Json::object({
+        "servers": Json::object({
+          "type": Json::string("array"),
+          "items": Json::object({"type": Json::string("string")}),
+          "description": Json::string(
+            "Server launch commands, e.g. [\"node server.js\"]",
+          ),
+        }),
+        "report_dir": Json::object({
+          "type": Json::string("string"),
+          "description": Json::string(
+            "Directory to write report files (report.json/md/html, optional JUnit)",
+          ),
+        }),
+        "junit": Json::object({
+          "type": Json::string("boolean"),
+          "description": Json::string("Also write report-junit.xml"),
+        }),
       }),
     }),
     async fn(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
@@ -122,7 +125,10 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
   let s2 = s1.tool(
     "list_checks",
     "List the conformance check categories that run_probe executes.",
-    Json::object({}),
+    Json::object({
+      "type": Json::string("object"),
+      "properties": Json::object({}),
+    }),
     fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(list_checks_meta().stringify()))
     },
@@ -130,7 +136,10 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
   let s3 = s2.tool(
     "version",
     "Report the mcpconftest server version.",
-    Json::object({}),
+    Json::object({
+      "type": Json::string("object"),
+      "properties": Json::object({}),
+    }),
     fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(Json::string(version()).stringify()))
     },

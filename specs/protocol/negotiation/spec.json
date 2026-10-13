@@ -1,20 +1,22 @@
-{
-  "check_id": "mcp.protocol.negotiation",
-  "category": "protocol",
-  "title": "协议版本协商矩阵检查",
-  "operations": [
-    "initialize"
-  ],
-  "preconditions": [
-    "server_is_stdio"
-  ],
-  "laws": [
-    "version_matrix_4_protocols"
-  ],
-  "backends": [
-    "js",
-    "native"
-  ],
-  "fingerprint": "sha256:13e3212181d481d3e29f98389721d909b93f16d3544ca37f0558532ee3469e26",
-  "version": "0.8.0"
+﻿{
+    "check_id":  "mcp.protocol.negotiation",
+    "category":  "protocol",
+    "title":  "协议版本协商矩阵检查",
+    "operations":  [
+                       "initialize",
+                       "tools/list"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio"
+                      ],
+    "laws":  [
+                 "version_matrix_5_protocols",
+                 "stateless_inline_negotiation_32022"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:5d2daed0366848e9c471a325a57c4982904cceedae1f2b0ee925c334d518f44d"
 }

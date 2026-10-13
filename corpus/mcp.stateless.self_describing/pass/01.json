@@ -1,0 +1,22 @@
+{
+  "check_id": "mcp.stateless.self_describing",
+  "kind": "pass",
+  "desc": "合规：请求携带完整 _meta（protocolVersion/clientInfo/clientCapabilities）被正常处理",
+  "request": {
+    "method": "tools/list",
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+        "name": "probe",
+        "version": "1.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {}
+    }
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": []
+    }
+  }
+}

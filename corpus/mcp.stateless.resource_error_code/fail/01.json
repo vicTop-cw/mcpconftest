@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.stateless.resource_error_code",
+  "kind": "fail",
+  "desc": "违规：资源未找到仍返回旧自定义码 -32002（需迁移 -32602）",
+  "request": {
+    "method": "resources/read",
+    "uri": "file:///missing.txt"
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32002,
+      "message": "Resource not found"
+    }
+  }
+}

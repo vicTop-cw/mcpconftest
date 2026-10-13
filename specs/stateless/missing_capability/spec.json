@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.missing_capability",
+    "category":  "stateless",
+    "title":  "缺失客户端能力检查（-32021）",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:81485e6c9c2a808d5287cdfc70b4aa4f43030821dbd5f440001b9271532dd1a7"
+}

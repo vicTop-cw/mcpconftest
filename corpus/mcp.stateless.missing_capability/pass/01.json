@@ -1,0 +1,22 @@
+{
+  "check_id": "mcp.stateless.missing_capability",
+  "kind": "pass",
+  "desc": "合规：需要客户端能力的调用返回 -32021 且 data.requiredCapabilities 列出能力清单",
+  "request": {
+    "method": "tools/call",
+    "name": "needs_sampling",
+    "arguments": {}
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32021,
+      "message": "Missing required client capability",
+      "data": {
+        "requiredCapabilities": [
+          "sampling"
+        ]
+      }
+    }
+  }
+}

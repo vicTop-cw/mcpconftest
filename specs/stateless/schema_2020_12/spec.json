@@ -1,0 +1,24 @@
+﻿{
+    "check_id":  "mcp.stateless.schema_2020_12",
+    "category":  "stateless",
+    "title":  "工具 JSON Schema 2020-12 合规检查",
+    "operations":  [
+                       "server/discover",
+                       "tools/list",
+                       "tools/call",
+                       "resources/read"
+                   ],
+    "preconditions":  [
+                          "server_is_stdio",
+                          "protocol_2026_07_28"
+                      ],
+    "laws":  [
+                 "stateless_core_2026_07_28"
+             ],
+    "backends":  [
+                     "js",
+                     "native"
+                 ],
+    "version":  "0.9.0",
+    "fingerprint":  "sha256:08a4cf76d83367335119447d057fc54666b093170403984fc5a8a3805bc7a027"
+}

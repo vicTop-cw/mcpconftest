@@ -1,0 +1,16 @@
+{
+  "check_id": "mcp.stateless.mrtr",
+  "kind": "fail",
+  "desc": "违规：tools/call 返回 input_required 但缺少 requests 问题清单",
+  "request": {
+    "method": "tools/call",
+    "name": "delete_resource",
+    "arguments": {}
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "result": {
+      "resultType": "input_required"
+    }
+  }
+}

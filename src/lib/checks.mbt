@@ -36,7 +36,23 @@ pub async fn check_initialize(session : Session) -> Array[CheckResult] {
             _ => results.push(CheckResult::fail("init.protocol_version", "protocolVersion missing", resp_str))
           }
         }
-        _ => results.push(CheckResult::fail("init.result", "result object missing", resp_str))
+        _ =>
+          // 2026-07-28 removed the initialize handshake; a compliant server
+          // correctly rejects it with -32601 + supportedVersions.
+          match (if j is Object(obj) { obj.get("error") } else { None }) {
+            Some(Json::Object(e)) =>
+              match e.get("code") {
+                Some(Json::Number(-32601, ..)) =>
+                  match e.get("message") {
+                    Some(Json::String(msg)) if msg.contains("supportedVersions") || msg.contains("speaks MCP") || msg.contains("2026-07-28") =>
+                      results.push(CheckResult::pass("init.removed", "initialize removed in 2026-07-28; server correctly rejects with -32601 + supportedVersions"))
+                    _ => results.push(CheckResult::fail("init.result", "result object missing", resp_str))
+                  }
+                Some(_) => results.push(CheckResult::fail("init.result", "result object missing", resp_str))
+                _ => results.push(CheckResult::fail("init.result", "result object missing", resp_str))
+              }
+            _ => results.push(CheckResult::fail("init.result", "result object missing", resp_str))
+          }
       }
     }
     Err(e) => results.push(CheckResult::fail("init.timeout", e, ""))
@@ -49,16 +65,14 @@ pub async fn check_initialize(session : Session) -> Array[CheckResult] {
 }
 
 ///| Capabilities check: declared vs actual behavior.
+///| 2026-07-28 discovers capabilities via server/discover; legacy servers that
+///| reject server/discover fall back to the old initialize handshake.
 pub async fn check_capabilities(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
-  match session.request("initialize", Json::object({}), 5000) {
+  let disc_resp = session.request("server/discover", Json::object({}), 5000)
+  match disc_resp {
     Ok(resp_str) => {
-      let j = @json.parse(resp_str) catch {
-        _ => {
-          results.push(CheckResult::fail("caps.parse", "JSON parse error", resp_str))
-          return results
-        }
-      }
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
       let caps = match (if j is Object(obj) { obj.get("result") } else { None }) {
         Some(Json::Object(r)) => r.get("capabilities")
         _ => None
@@ -66,11 +80,41 @@ pub async fn check_capabilities(session : Session) -> Array[CheckResult] {
       match caps {
         Some(Json::Object(c)) => {
           match c.get("tools") {
-            Some(_) => results.push(CheckResult::pass("caps.tools", "tools capability declared"))
+            Some(_) => results.push(CheckResult::pass("caps.tools", "tools capability declared (via server/discover)"))
             None => results.push(CheckResult::fail("caps.tools", "tools capability not declared", ""))
           }
         }
-        _ => results.push(CheckResult::fail("caps.declared", "no capabilities declared", resp_str))
+        _ =>
+          match (if j is Object(obj) { obj.get("error") } else { None }) {
+            Some(Json::Object(e)) =>
+              match e.get("code") {
+                Some(Json::Number(-32601, ..)) => {
+                  // Legacy server without server/discover → initialize fallback.
+                  let init_resp = session.request("initialize", Json::object({}), 5000)
+                  match init_resp {
+                    Ok(init_str) => {
+                      let ji = @json.parse(init_str) catch { _ => Json::null() }
+                      match (if ji is Object(obj) { obj.get("result") } else { None }) {
+                        Some(Json::Object(r)) =>
+                          match r.get("capabilities") {
+                            Some(Json::Object(c2)) =>
+                              match c2.get("tools") {
+                                Some(_) => results.push(CheckResult::pass("caps.tools", "tools capability declared (via initialize fallback)"))
+                                None => results.push(CheckResult::fail("caps.tools", "tools capability not declared", ""))
+                              }
+                            _ => results.push(CheckResult::fail("caps.declared", "no capabilities declared", init_str))
+                          }
+                        _ => results.push(CheckResult::fail("caps.declared", "initialize fallback returned no result", init_str))
+                      }
+                    }
+                    Err(e) => results.push(CheckResult::fail("caps.fallback_timeout", e, ""))
+                  }
+                }
+                Some(_) => results.push(CheckResult::fail("caps.declared", "server/discover returned unexpected error", resp_str))
+                _ => results.push(CheckResult::fail("caps.malformed", "server/discover returned malformed error", resp_str))
+              }
+            _ => results.push(CheckResult::fail("caps.declared", "no capabilities declared", resp_str))
+          }
       }
     }
     Err(e) => results.push(CheckResult::fail("caps.timeout", e, ""))
@@ -310,8 +354,23 @@ pub async fn check_resources_read_error(session : Session) -> Array[CheckResult]
 }
 
 ///| ping check: server must respond to ping (empty result per spec).
+///| 2026-07-28 removed the ping method; servers that implement server/discover
+///| (stateless era) correctly reject ping with -32601, which is treated as a
+///| compliant skip — liveness is covered by the keepalive RPC check instead.
 pub async fn check_ping(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
+  // Determine the protocol era: a server answering server/discover is a
+  // 2026-07-28 stateless server (ping removed); a -32601 there means legacy.
+  let mut stateless_server = false
+  match session.request("server/discover", Json::object({}), 3000) {
+    Ok(resp_str) => {
+      let dj = @json.parse(resp_str) catch { _ => Json::null() }
+      if (if dj is Object(obj) { obj.get("result") } else { None }) is Some(Json::Object(_)) {
+        stateless_server = true
+      }
+    }
+    Err(_) => ()
+  }
   match session.request("ping", Json::object({}), 5000) {
     Ok(resp_str) => {
       let j = @json.parse(resp_str) catch {
@@ -327,7 +386,11 @@ pub async fn check_ping(session : Session) -> Array[CheckResult] {
             Some(Json::Object(e)) =>
               match e.get("code") {
                 Some(Json::Number(-32601, ..)) =>
-                  results.push(CheckResult::fail("ping.responds", "ping returned -32601 (spec: server MUST respond to ping)", resp_str))
+                  if stateless_server {
+                    results.push(CheckResult::skip("ping.removed", "ping removed in 2026-07-28; server correctly rejects with -32601 (liveness covered by keepalive RPC)"))
+                  } else {
+                    results.push(CheckResult::fail("ping.responds", "ping returned -32601 (spec: server MUST respond to ping)", resp_str))
+                  }
                 Some(_) => results.push(CheckResult::fail("ping.responds", "ping returned unexpected error", resp_str))
                 _ => results.push(CheckResult::fail("ping.responds", "ping returned malformed error", resp_str))
               }
@@ -344,8 +407,10 @@ pub async fn check_ping(session : Session) -> Array[CheckResult] {
 pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   let mut all_ok = true
+  // 2026-07-28 removed ping; liveness is probed with a regular RPC
+  // (tools/list) that every server must implement.
   for i in 1..=3 {
-    match session.request("ping", Json::object({}), 3000) {
+    match session.request("tools/list", Json::object({}), 3000) {
       Ok(resp_str) => {
         let j = @json.parse(resp_str) catch { _ => Json::null() }
         if j is Json::Null {
@@ -355,7 +420,7 @@ pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
           ()
         } else {
           all_ok = false
-          results.push(CheckResult::fail("keepalive.no_result_\{i}", "keepalive ping \{i} failed", resp_str))
+          results.push(CheckResult::fail("keepalive.no_result_\{i}", "keepalive RPC \{i} failed", resp_str))
         }
       }
       Err(e) => {
@@ -365,7 +430,7 @@ pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
     }
   }
   if all_ok {
-    results.push(CheckResult::pass("keepalive.stable", "3/3 keepalive pings succeeded"))
+    results.push(CheckResult::pass("keepalive.stable", "3/3 keepalive RPCs succeeded"))
   }
   results
 }
@@ -373,6 +438,9 @@ pub async fn check_keepalive(session : Session) -> Array[CheckResult] {
 ///| Protocol version negotiation matrix: probe servers with several
 /// protocolVersion values; a compliant server either echoes a supported
 /// version or replies with a JSON-RPC error — never a malformed response.
+/// Since 2026-07-28 negotiation is inline: the client sends its preferred
+/// version per-request (in _meta + MCP-Protocol-Version) and an unsupported
+/// version must be answered with -32022 + data.supported.
 pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult] {
   let results : Array[CheckResult] = []
   let versions = ["2026-07-28", "2025-06-18", "2025-03-26", "1999-01-01"]
@@ -410,6 +478,56 @@ pub async fn check_protocol_negotiation(session : Session) -> Array[CheckResult]
               Some(_) => results.push(CheckResult::pass("negotiation.\{v}.rejected", "unsupported version rejected with error (compliant)"))
               _ => results.push(CheckResult::fail("negotiation.\{v}.malformed", "response has neither result nor error", resp_str))
             }
+          }
+        }
+      }
+      Err(e) => results.push(CheckResult::fail("negotiation.\{v}.timeout", e, ""))
+    }
+  }
+  // 2026-07-28 stateless inline negotiation: a plain RPC carries the version;
+  // an unsupported version must yield -32022 + data.supported (never success).
+  let stateless_versions = ["2026-07-28", "2099-01-01"]
+  for v in stateless_versions {
+    let params = Json::object({
+      "protocolVersion": Json::string(v),
+      "_meta": Json::object({
+        "io.modelcontextprotocol/protocolVersion": Json::string(v),
+        "io.modelcontextprotocol/clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }),
+        "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+      }),
+    })
+    match session.request("tools/list", params, 5000) {
+      Ok(resp_str) => {
+        let j = @json.parse(resp_str) catch { _ => Json::null() }
+        if j is Json::Null {
+          results.push(CheckResult::fail("negotiation.\{v}.parse", "JSON parse error", resp_str))
+        } else if (if j is Object(obj) { obj.get("result") } else { None }) is Some(_) {
+          if v == "2026-07-28" {
+            results.push(CheckResult::pass("negotiation.\{v}.inline", "tools/list accepted \{v} (inline negotiation OK)"))
+          } else {
+            results.push(CheckResult::fail("negotiation.\{v}.inline", "tools/list processed unsupported version \{v} (must reply -32022 + data.supported)", resp_str))
+          }
+        } else {
+          match (if j is Object(obj) { obj.get("error") } else { None }) {
+            Some(Json::Object(e)) =>
+              match e.get("code") {
+                Some(Json::Number(-32022, ..)) => {
+                  match e.get("data") {
+                    Some(Json::Object(d)) =>
+                      if d.get("supported") is Some(Json::Array(_)) {
+                        results.push(CheckResult::pass("negotiation.\{v}.inline", "unsupported version \{v} rejected with -32022 + data.supported"))
+                      } else {
+                        results.push(CheckResult::fail("negotiation.\{v}.data", "-32022 error missing data.supported", resp_str))
+                      }
+                    _ => results.push(CheckResult::fail("negotiation.\{v}.data", "-32022 error missing data object", resp_str))
+                  }
+                }
+                Some(Json::Number(-32601, ..)) =>
+                  results.push(CheckResult::fail("negotiation.\{v}.inline", "tools/list returned -32601 (spec: server MUST implement tools/list)", resp_str))
+                Some(_) => results.push(CheckResult::fail("negotiation.\{v}.inline", "unexpected error for version \{v}", resp_str))
+                _ => results.push(CheckResult::fail("negotiation.\{v}.malformed", "malformed error", resp_str))
+              }
+            _ => results.push(CheckResult::fail("negotiation.\{v}.malformed", "response has neither result nor error", resp_str))
           }
         }
       }
@@ -718,7 +836,23 @@ pub async fn check_batch(session : Session) -> Array[CheckResult] {
       if j is Json::Null {
         results.push(CheckResult::fail("batch.parse", "JSON parse error", resp_str))
       } else {
-        validate_batch_resp(j, req_ids, err_req_ids, results)
+        // 2026-07-28 removed JSON-RPC batching; a compliant server rejects a
+        // batch array with -32600/-32601.
+        let mut batch_rejected = false
+        match (if j is Object(obj) { obj.get("error") } else { None }) {
+          Some(Json::Object(e)) =>
+            match e.get("code") {
+              Some(Json::Number(-32600, ..)) => batch_rejected = true
+              Some(Json::Number(-32601, ..)) => batch_rejected = true
+              _ => ()
+            }
+          _ => ()
+        }
+        if batch_rejected {
+          results.push(CheckResult::skip("batch.removed", "JSON-RPC batch removed in 2026-07-28; server rejects batch array (compliant)"))
+        } else {
+          validate_batch_resp(j, req_ids, err_req_ids, results)
+        }
       }
     }
     Err(e) => results.push(CheckResult::fail("batch.timeout", e, ""))
@@ -801,6 +935,486 @@ pub async fn check_error_schema(session : Session) -> Array[CheckResult] {
       }
     }
     Err(e) => results.push(CheckResult::fail("error_schema.timeout", e, ""))
+  }
+  results
+}
+
+// ---------------------------------------------------------------------------
+// 2026-07-28 stateless core checks (SEP-2575/SEP-2567/SEP-2243/SEP-2549/
+// SEP-2106/SEP-2164/SEP-2322/SEP-2577). These probe the stateless protocol
+// surface: per-request self-description, inline version negotiation,
+// server/discover, MRTR, cache hints, full JSON Schema 2020-12 and the
+// JSON-RPC-standard -32602 resource error code.
+// ---------------------------------------------------------------------------
+
+///| [stateless] server/discover must be implemented (SEP-2575): returns
+///| supportedVersions / capabilities / serverInfo. Servers MUST implement it;
+///| a -32601 rejection is a spec violation.
+pub async fn check_stateless_discover(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("server/discover", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("discover.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
+          Some(Json::Object(r)) => {
+            if r.get("supportedVersions") is Some(Json::Array(_)) {
+              results.push(CheckResult::pass("discover.supported_versions", "server/discover returned supportedVersions"))
+            } else {
+              results.push(CheckResult::fail("discover.supported_versions", "server/discover result missing supportedVersions", resp_str))
+            }
+            if r.get("capabilities") is Some(Json::Object(_)) {
+              results.push(CheckResult::pass("discover.capabilities", "server/discover returned capabilities"))
+            } else {
+              results.push(CheckResult::fail("discover.capabilities", "server/discover result missing capabilities", resp_str))
+            }
+            // 2026-07-28: serverInfo lives in result._meta["io.modelcontextprotocol/serverInfo"].
+            // Accept both the legacy top-level location and the _meta location.
+            let has_server_info : Bool =
+              (r.get("serverInfo") is Some(Json::Object(_))) || (
+                match r.get("_meta") {
+                  Some(Json::Object(m)) =>
+                    m.get("io.modelcontextprotocol/serverInfo") is Some(Json::Object(_))
+                  _ => false
+                }
+              )
+            if has_server_info {
+              results.push(CheckResult::pass("discover.server_info", "server/discover returned serverInfo"))
+            } else {
+              results.push(CheckResult::fail("discover.server_info", "server/discover result missing serverInfo (top-level or _meta)", resp_str))
+            }
+          }
+          Some(_) => results.push(CheckResult::fail("discover.result", "server/discover result is not an object", resp_str))
+          _ =>
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) =>
+                    results.push(CheckResult::fail("discover.implemented", "server/discover returned -32601 (spec: server MUST implement server/discover)", resp_str))
+                  Some(_) => results.push(CheckResult::fail("discover.error", "server/discover returned unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("discover.malformed", "server/discover returned malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("discover.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("discover.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Inline version negotiation (SEP-2575): when a client sends an
+///| unsupported protocol version, the server must answer with -32022
+///| (UnsupportedProtocolVersionError) and list supported versions in
+///| data.supported instead of processing the request.
+pub async fn check_stateless_version_negotiation(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let req = Json::object({
+    "jsonrpc": Json::string("2.0"),
+    "id": Json::number(1.0),
+    "method": Json::string("tools/list"),
+    "params": Json::object({
+      "protocolVersion": Json::string("2099-01-01"),
+      "_meta": Json::object({
+        "io.modelcontextprotocol/protocolVersion": Json::string("2099-01-01"),
+        "io.modelcontextprotocol/clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }),
+        "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+      }),
+    }),
+  })
+  match session.request_raw(req.stringify(), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("version_negotiation.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("error") } else { None }) {
+          Some(Json::Object(e)) =>
+            match e.get("code") {
+              Some(Json::Number(-32022, ..)) => {
+                match e.get("data") {
+                  Some(Json::Object(d)) =>
+                    if d.get("supported") is Some(Json::Array(_)) {
+                      results.push(CheckResult::pass("version_negotiation.32022", "unsupported version rejected with -32022 + data.supported"))
+                    } else {
+                      results.push(CheckResult::fail("version_negotiation.data", "-32022 error missing data.supported version list", resp_str))
+                    }
+                  _ => results.push(CheckResult::fail("version_negotiation.data", "-32022 error missing data object", resp_str))
+                }
+              }
+              Some(Json::Number(-32601, ..)) =>
+                results.push(CheckResult::fail("version_negotiation.tools_list", "tools/list returned -32601 (spec: server MUST implement tools/list)", resp_str))
+              Some(_) => results.push(CheckResult::fail("version_negotiation.error", "unexpected error for unsupported version", resp_str))
+              _ => results.push(CheckResult::fail("version_negotiation.malformed", "malformed error for unsupported version", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("version_negotiation.unknown_error", "error field is not an object", resp_str))
+          None =>
+            results.push(CheckResult::fail("version_negotiation.accepted", "server processed request with unsupported protocol version (no inline negotiation)", resp_str))
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("version_negotiation.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Per-request self-description (SEP-2575): every request must
+///| carry protocol version / client identity / client capabilities in _meta.
+///| A request missing _meta must be rejected (INVALID_PARAMS) — a compliant
+///| server must not infer capabilities from history.
+pub async fn check_stateless_self_describing(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let req = Json::object({
+    "jsonrpc": Json::string("2.0"),
+    "id": Json::number(1.0),
+    "method": Json::string("tools/list"),
+    "params": Json::object({}),
+  })
+  match session.request_raw(req.stringify(), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("self_describing.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("error") } else { None }) {
+          Some(Json::Object(e)) =>
+            match e.get("code") {
+              Some(Json::Number(-32602, ..)) =>
+                results.push(CheckResult::pass("self_describing.rejected", "request without _meta rejected with -32602 (INVALID_PARAMS)"))
+              Some(_) => results.push(CheckResult::fail("self_describing.error", "request without _meta rejected with wrong error code", resp_str))
+              _ => results.push(CheckResult::fail("self_describing.malformed", "malformed error for request without _meta", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("self_describing.unknown_error", "error field is not an object", resp_str))
+          None =>
+            results.push(CheckResult::fail("self_describing.accepted", "request without _meta was processed (server must require per-request self-description)", resp_str))
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("self_describing.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Missing client capability (SEP-2575): when handling a request
+///| requires a capability the client did not declare, the server must return
+///| -32021 (MissingRequiredClientCapabilityError) with the required capability
+///| list, instead of silently executing.
+pub async fn check_stateless_missing_capability(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let params = Json::object({
+    "name": Json::string("__mcpconftest_cap_dummy__"),
+    "arguments": Json::object({}),
+    "_meta": Json::object({
+      "io.modelcontextprotocol/protocolVersion": Json::string("2026-07-28"),
+      "io.modelcontextprotocol/clientInfo": Json::object({ "name": Json::string("mcpconftest"), "version": Json::string(version()) }),
+      "io.modelcontextprotocol/clientCapabilities": Json::object({}),
+    }),
+  })
+  match session.request("tools/call", params, 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("missing_capability.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("error") } else { None }) {
+          Some(Json::Object(e)) =>
+            match e.get("code") {
+              Some(Json::Number(-32021, ..)) => {
+                match e.get("data") {
+                  Some(Json::Object(d)) =>
+                    if d.get("requiredCapabilities") is Some(Json::Array(_)) {
+                      results.push(CheckResult::pass("missing_capability.32021", "missing capability rejected with -32021 + requiredCapabilities"))
+                    } else {
+                      results.push(CheckResult::fail("missing_capability.data", "-32021 error missing data.requiredCapabilities", resp_str))
+                    }
+                  _ => results.push(CheckResult::fail("missing_capability.data", "-32021 error missing data object", resp_str))
+                }
+              }
+              Some(Json::Number(-32601, ..)) =>
+                results.push(CheckResult::skip("missing_capability.unknown_tool", "dummy tool unknown; cannot observe capability check"))
+              Some(_) => results.push(CheckResult::fail("missing_capability.error", "unexpected error", resp_str))
+              _ => results.push(CheckResult::fail("missing_capability.malformed", "malformed error", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("missing_capability.unknown_error", "error field is not an object", resp_str))
+          None =>
+            results.push(CheckResult::fail("missing_capability.executed", "server executed call without declared client capability (expected -32021)", resp_str))
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("missing_capability.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Cacheable list results (SEP-2549): tools/list / prompts/list /
+///| resources/list / resources/read responses must carry ttlMs and cacheScope
+///| so clients can cache safely.
+pub async fn check_stateless_list_cache(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("tools/list", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("list_cache.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
+          Some(Json::Object(r)) => {
+            if r.get("ttlMs") is Some(Json::Number(_, ..)) {
+              results.push(CheckResult::pass("list_cache.ttl_ms", "tools/list response carries ttlMs"))
+            } else {
+              results.push(CheckResult::fail("list_cache.ttl_ms", "tools/list response missing ttlMs cache hint", resp_str))
+            }
+            if r.get("cacheScope") is Some(Json::String(_)) {
+              results.push(CheckResult::pass("list_cache.cache_scope", "tools/list response carries cacheScope"))
+            } else {
+              results.push(CheckResult::fail("list_cache.cache_scope", "tools/list response missing cacheScope", resp_str))
+            }
+          }
+          Some(_) => results.push(CheckResult::fail("list_cache.result", "tools/list result is not an object", resp_str))
+          _ =>
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) =>
+                    results.push(CheckResult::fail("list_cache.tools_list", "tools/list returned -32601 (spec: server MUST implement tools/list)", resp_str))
+                  Some(_) => results.push(CheckResult::fail("list_cache.error", "tools/list returned unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("list_cache.malformed", "tools/list returned malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("list_cache.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("list_cache.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Full JSON Schema 2020-12 for tools (SEP-2106): inputSchema
+///| must keep a type:"object" root and must not auto-dereference external
+///| $ref URIs. Internal $defs/$ref composition (oneOf/anyOf/allOf) is allowed.
+pub async fn check_stateless_schema_2020_12(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("tools/list", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("schema_2020_12.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
+          Some(Json::Object(r)) =>
+            match r.get("tools") {
+              Some(Json::Array(tools)) => {
+                if tools.length() == 0 {
+                  results.push(CheckResult::pass("schema_2020_12.empty", "no tools declared (schema check vacuous)"))
+                } else {
+                  for tool in tools {
+                    match tool {
+                      Json::Object(t) => {
+                        let label = match t.get("name") {
+                          Some(Json::String(n)) => n
+                          _ => "?"
+                        }
+                        match t.get("inputSchema") {
+                          Some(Json::Object(s)) => {
+                            // 2020-12: type:"object" root is the strict form. A schema
+                            // without explicit type is still valid JSON Schema 2020-12:
+                            // an empty schema ({}) accepts anything, and the presence of
+                            // properties/required implies object semantics. Only a schema
+                            // with an explicit non-object type is non-compliant.
+                            let has_object_hint : Bool =
+                              s.get("properties") is Some(Json::Object(_)) ||
+                              s.get("required") is Some(Json::Array(_)) ||
+                              s.is_empty()
+                            match s.get("type") {
+                              Some(Json::String(tp)) if tp == "object" =>
+                                results.push(CheckResult::pass("schema_2020_12.\{label}.root_object", "inputSchema root type=object"))
+                              Some(_) =>
+                                results.push(CheckResult::fail("schema_2020_12.\{label}.root_type", "inputSchema root type != object (2020-12 requires object root)", resp_str))
+                              _ if has_object_hint =>
+                                results.push(CheckResult::pass("schema_2020_12.\{label}.root_object", "inputSchema object root (implicit via properties/required/empty schema)"))
+                              _ =>
+                                results.push(CheckResult::fail("schema_2020_12.\{label}.root_type", "inputSchema missing root type (2020-12 requires object root)", resp_str))
+                            }
+                            match s.get("$ref") {
+                              Some(Json::String(ref_uri)) if ref_uri.has_prefix("http://") || ref_uri.has_prefix("https://") =>
+                                results.push(CheckResult::fail("schema_2020_12.\{label}.external_ref", "inputSchema contains external ref (must not auto-dereference)", resp_str))
+                              _ =>
+                                results.push(CheckResult::pass("schema_2020_12.\{label}.refs", "inputSchema ref usage is internal-only or absent"))
+                            }
+                          }
+                          _ =>
+                            results.push(CheckResult::fail("schema_2020_12.\{label}.input_schema", "tool \{label} missing inputSchema object", resp_str))
+                        }
+                      }
+                      _ => ()
+                    }
+                  }
+                }
+              }
+              _ => results.push(CheckResult::fail("schema_2020_12.tools", "tools/list result missing tools array", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("schema_2020_12.result", "tools/list result is not an object", resp_str))
+          _ =>
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) =>
+                    results.push(CheckResult::fail("schema_2020_12.tools_list", "tools/list returned -32601 (spec: server MUST implement tools/list)", resp_str))
+                  Some(_) => results.push(CheckResult::fail("schema_2020_12.error", "tools/list returned unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("schema_2020_12.malformed", "tools/list returned malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("schema_2020_12.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("schema_2020_12.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Missing resource error code (SEP-2164): the resource-not-found
+///| error must use the JSON-RPC standard -32602 Invalid Params, not the old
+///| MCP-custom -32002.
+pub async fn check_stateless_resource_error_code(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("resources/read", Json::object({ "uri": Json::string("file:///__mcpconftest_missing__") }), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("resource_error_code.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("error") } else { None }) {
+          Some(Json::Object(e)) =>
+            match e.get("code") {
+              Some(Json::Number(-32602, ..)) =>
+                results.push(CheckResult::pass("resource_error_code.32602", "missing resource rejected with -32602 (JSON-RPC Invalid Params)"))
+              Some(Json::Number(-32002, ..)) =>
+                results.push(CheckResult::fail("resource_error_code.legacy", "missing resource still uses legacy -32002 (must migrate to -32602)", resp_str))
+              Some(_) => results.push(CheckResult::fail("resource_error_code.error", "missing resource returned unexpected error code", resp_str))
+              _ => results.push(CheckResult::fail("resource_error_code.malformed", "malformed error for missing resource", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("resource_error_code.unknown_error", "error field is not an object", resp_str))
+          None =>
+            results.push(CheckResult::fail("resource_error_code.not_found", "missing resource did not return an error (expected -32602)", resp_str))
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("resource_error_code.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] MRTR input_required round-trip (SEP-2322): when a tool needs
+///| client input mid-call, the response must carry resultType:"input_required"
+///| plus the requests list; otherwise a normal completion is fine.
+pub async fn check_stateless_mrtr(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  let params = Json::object({
+    "name": Json::string("__mcpconftest_mrtr_dummy__"),
+    "arguments": Json::object({}),
+  })
+  match session.request("tools/call", params, 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("mrtr.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
+          Some(Json::Object(r)) =>
+            match r.get("resultType") {
+              Some(Json::String(t)) if t == "input_required" => {
+                match r.get("requests") {
+                  Some(Json::Array(items)) if items.length() > 0 =>
+                    results.push(CheckResult::pass("mrtr.input_required", "input_required result carries requests list"))
+                  _ =>
+                    results.push(CheckResult::fail("mrtr.requests", "input_required result missing requests list (client cannot answer)", resp_str))
+                }
+              }
+              Some(Json::String(_)) =>
+                results.push(CheckResult::fail("mrtr.result_type", "result carries unknown resultType (spec only defines input_required)", resp_str))
+              _ =>
+                results.push(CheckResult::pass("mrtr.completed", "tool completed without input_required (no MRTR needed)"))
+            }
+          Some(_) => results.push(CheckResult::pass("mrtr.completed", "tool completed with non-object result (no MRTR needed)"))
+          _ =>
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) =>
+                    results.push(CheckResult::skip("mrtr.unknown_tool", "dummy tool unknown; cannot observe MRTR flow"))
+                  Some(_) => results.push(CheckResult::fail("mrtr.error", "tools/call returned unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("mrtr.malformed", "malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("mrtr.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("mrtr.timeout", e, ""))
+  }
+  results
+}
+
+///| [stateless] Deprecated capability annotation (SEP-2577): Roots, Sampling
+///| and Logging are deprecated; servers that still advertise them must mark
+///| them deprecated in capabilities.
+pub async fn check_stateless_deprecations(session : Session) -> Array[CheckResult] {
+  let results : Array[CheckResult] = []
+  match session.request("server/discover", Json::object({}), 5000) {
+    Ok(resp_str) => {
+      let j = @json.parse(resp_str) catch { _ => Json::null() }
+      if j is Json::Null {
+        results.push(CheckResult::fail("deprecations.parse", "JSON parse error", resp_str))
+      } else {
+        match (if j is Object(obj) { obj.get("result") } else { None }) {
+          Some(Json::Object(r)) =>
+            match r.get("capabilities") {
+              Some(Json::Object(caps)) => {
+                for cap_name in ["sampling", "roots", "logging"] {
+                  let label = "deprecations.\{cap_name}"
+                  match caps.get(cap_name) {
+                    Some(Json::Object(_)) => {
+                      match caps.get(cap_name) {
+                        Some(Json::Object(cap)) =>
+                          match cap.get("deprecated") {
+                            Some(Json::True) =>
+                              results.push(CheckResult::pass(label, "\{cap_name} capability advertised with deprecated annotation"))
+                            _ =>
+                              results.push(CheckResult::fail(label, "\{cap_name} advertised without deprecated annotation (SEP-2577)", resp_str))
+                          }
+                        _ => ()
+                      }
+                    }
+                    None =>
+                      results.push(CheckResult::pass(label, "\{cap_name} not advertised (no deprecation annotation needed)"))
+                    Some(_) =>
+                      results.push(CheckResult::fail(label, "\{cap_name} capability entry is not an object", resp_str))
+                  }
+                }
+              }
+              _ => results.push(CheckResult::fail("deprecations.capabilities", "server/discover result missing capabilities", resp_str))
+            }
+          Some(_) => results.push(CheckResult::fail("deprecations.result", "server/discover result is not an object", resp_str))
+          _ =>
+            match (if j is Object(obj) { obj.get("error") } else { None }) {
+              Some(Json::Object(e)) =>
+                match e.get("code") {
+                  Some(Json::Number(-32601, ..)) =>
+                    results.push(CheckResult::skip("deprecations.no_discover", "server/discover unavailable; cannot inspect capability deprecations"))
+                  Some(_) => results.push(CheckResult::fail("deprecations.error", "server/discover returned unexpected error", resp_str))
+                  _ => results.push(CheckResult::fail("deprecations.malformed", "server/discover returned malformed error", resp_str))
+                }
+              _ => results.push(CheckResult::fail("deprecations.malformed", "response has neither result nor error", resp_str))
+            }
+        }
+      }
+    }
+    Err(e) => results.push(CheckResult::fail("deprecations.timeout", e, ""))
   }
   results
 }
