@@ -7,6 +7,23 @@ on:
     branches: [main]
 
 jobs:
+  iron-laws:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: moonbitlang/setup-moonbit@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: pwsh -NoProfile -Command ./scripts/verify-specs.ps1
+        name: L1 spec-is-truth gate
+      - run: pwsh -NoProfile -Command ./scripts/verify-corpus.ps1
+        name: L3 corpus gate
+      - run: |
+          moon run cmd --target js -- list-checks > /tmp/checks.js.txt
+          moon run cmd --target native -- list-checks > /tmp/checks.native.txt
+          diff /tmp/checks.js.txt /tmp/checks.native.txt
+        name: L2 dual-backend consensus gate
   check:
     runs-on: ubuntu-latest
     strategy:

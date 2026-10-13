@@ -99,9 +99,29 @@ mcpconftest serve                                         # MCP server 形态（
 
 ## MCP 化（库即 MCP server）
 
-`mcpconftest serve` 以无状态 MCP server（2026-07-28 协议）暴露三个工具：
-`version` / `run_probe`（参数：servers、report_dir、junit）/ `list_checks`。
-任何支持 stdio MCP 的客户端可直接拉起 `mcpconftest serve`。
+`mcpconftest serve` 以无状态 MCP server（2026-07-28 协议）暴露三个原生工具：
+`version` / `run_probe`（参数：servers、report_dir、junit）/ `list_checks`；
+并内嵌 FIST-Mbt 作为内部工具库，额外注册 `mcpcf.*` 七工具
+（`ops_init` / `run_batch` / `verify` / `watchdog` / `report` / `circuit` / `review`），
+实现"规约驱动巡检 + 自驱运维"一体化。任何支持 stdio MCP 的客户端可直接拉起
+`mcpconftest serve`。
+
+## 可验证规约层（sigmaLang 风格）
+
+检查项不再硬编码：以 `specs/`（Markdown + JSON）为单一真源，
+引擎在运行时读取规格动态装配 `list-checks`。
+
+- `specs/` — 19 类检查项的机读规格（operations / preconditions / laws / fingerprint sha256）
+- `laws/iron-laws.md` — 五条铁律：
+  - **L1 规格即真源**：list-checks 必须与 specs 一致（门禁 `scripts/verify-specs.ps1`）
+  - **L2 双端共识**：js/native 两后端检查清单输出必须一致（CI 门禁）
+  - **L3 有规必有语料**：每个检查项至少一对 pass/fail 负向语料（门禁 `scripts/verify-corpus.ps1`）
+  - **L4 无指纹不发布**：spec 缺失 sha256 指纹不得发布
+  - **L5 破坏性变更必示警**：变更既有检查语义必须走 `docs/rule-lifecycle.md` 演进流程
+- `corpus/` — 每类检查项的 pass / fail 样例语料（负向测试强制）
+- `scripts/new-check.ps1` — 新增检查项脚手架，自动生成 spec + 语料模板
+
+新检查项 = 写 spec + 补语料 + 跑门禁，三件套齐活即可合入。
 
 ## 双后端
 
@@ -122,7 +142,9 @@ Every run writes to the report directory:
 - `report.html` — standalone styled page (collapsible details)
 - `report-junit.xml` — JUnit XML, only with `--junit` (CI-native)
 
-## Check categories (v0.8)
+## Check categories (v1.0, spec-driven)
+
+19 类检查项由 `specs/` 单一真源驱动（运行时装配 + sha256 指纹）。
 
 - **initialize** — jsonrpc, server_info, protocol_version
 - **capabilities** — response structure
@@ -167,7 +189,8 @@ Report writing is an observation surface — it never changes the exit verdict.
 bash scripts/ci.sh
 ```
 
-Three gates: `moon check` + `moon test` + e2e fixture regression. All must pass.
+Gates: `moon check` + `moon test` + e2e fixture regression（GitHub Actions 另有
+`iron-laws` job 执行 L1/L2/L3 铁律门禁）。All must pass.
 
 ## CI integration
 
@@ -177,19 +200,28 @@ Three gates: `moon check` + `moon test` + e2e fixture regression. All must pass.
 ## Project layout
 
 ```
+specs/             — 19 类检查项机读规格（单一真源，含 sha256 指纹）
+laws/iron-laws.md  — 五条铁律（L1-L5）
+corpus/            — 每类检查项 pass/fail 语料（负向测试强制）
 src/lib/
   types.mbt       — CheckResult / Report types + constructors
   types_test.mbt  — in-package unit tests
   session.mbt     — stdio + WebSocket JSON-RPC session driver
   session_io_js.mbt   — JS 后端 stdio 抽象实现（inline extern）
   session_io_native.mbt — native 后端实现（spawn 子进程真实 stdio + async/websocket 真实 WS）
+  specs.mbt       — 规格驱动装配（list_checks_spec，优先规格回退静态）
+  fist_ops.mbt    — FIST-Mbt 库级嵌入（mcpcf.* 七工具 + 数据目录隔离）
   checks.mbt      — 19 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)
   server.mbt      — MCP server（serve：version / run_probe / list_checks）
+  mcp_server.mbt  — MCP server 装配（含 with_mcpcf_tools 注册）
 cmd/main.mbt      — CLI entry: run / list-checks / version / serve
 tests/fixtures/   — deliberately partially-compliant MCP server (node)
 scripts/ci.sh     — CI gate
+scripts/verify-specs.ps1   — L1 门禁（规格 vs list-checks 一致性）
+scripts/verify-corpus.ps1  — L3 门禁（语料覆盖 100%）
+scripts/new-check.ps1      — 新增检查项脚手架
 scripts/blackbox/
   install_onecmd.ps1  — Windows 一行命令安装注册（shim + PATH）
   install.sh          — Linux/WSL 一行命令安装注册
@@ -197,8 +229,14 @@ scripts/blackbox/
   release_zip.sh      — Linux 打包 JS 发行资产
 docs/INSTALL.md     — 安装注册全指南
 docs/USAGE.md       — 完整用法
+docs/rule-lifecycle.md — L5 规则演进流程
+docs/fist-data-isolation.md — FIST 数据目录隔离说明
 ```
 
 ## License
 
 MIT
+
+## 仓库同步
+
+- **同步/发布只需推 GitCode 即可**：https://gitcode.com/VictorTop/mcpconftest —— GitHub 镜像（https://github.com/vicTop-cw/mcpconftest）由 CI 自动同步（GitCode 根目录 `.sync-to-github` 开关控制，只增不删，以 GitCode 为源覆盖同名分支），**无需手动推送 GitHub，也不要直接改动 GitHub 镜像**。
