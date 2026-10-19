@@ -12,3 +12,13 @@ _release/
 dep.log
 temp/
 trace.json
+
+# 本地备份与运行残留
+backup/
+err.txt
+out.txt
+req.txt
+list_checks.txt
+check_native.txt
+e2e_*.txt
+serve_*.txt

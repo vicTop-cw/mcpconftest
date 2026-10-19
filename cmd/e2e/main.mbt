@@ -52,6 +52,23 @@ async fn run_fixture() -> ProbeRun {
   push_all(results, r11)
   let r12 = @lib.check_protocol_negotiation(session)
   push_all(results, r12)
+  let r13 = @lib.check_logging(session)
+  push_all(results, r13)
+  let r14 = @lib.check_completion(session)
+  push_all(results, r14)
+  let r15 = @lib.check_subscribe(session)
+  push_all(results, r15)
+  let r16 = @lib.check_sampling(session)
+  push_all(results, r16)
+  let r17 = @lib.check_batch(session)
+  push_all(results, r17)
+  if count(r17, "pass") < 3 { ok = false }
+  let r18 = @lib.check_id_matching(session)
+  push_all(results, r18)
+  if count(r18, "pass") < 4 { ok = false }
+  let r19 = @lib.check_error_schema(session)
+  push_all(results, r19)
+  if count(r19, "fail") > 0 { ok = false }
   // 2026-07-28 stateless core checks.
   let r20 = @lib.check_stateless_discover(session)
   push_all(results, r20)
@@ -124,6 +141,23 @@ async fn probe_server(cmd : String) -> ProbeRun {
   push_all(results, r11)
   let r12 = @lib.check_protocol_negotiation(session)
   push_all(results, r12)
+  let r13 = @lib.check_logging(session)
+  push_all(results, r13)
+  let r14 = @lib.check_completion(session)
+  push_all(results, r14)
+  let r15 = @lib.check_subscribe(session)
+  push_all(results, r15)
+  let r16 = @lib.check_sampling(session)
+  push_all(results, r16)
+  let r17 = @lib.check_batch(session)
+  push_all(results, r17)
+  if count_err(r17) > 0 { ok = false }
+  let r18 = @lib.check_id_matching(session)
+  push_all(results, r18)
+  if count_err(r18) > 0 { ok = false }
+  let r19 = @lib.check_error_schema(session)
+  push_all(results, r19)
+  if count_err(r19) > 0 { ok = false }
   // 2026-07-28 stateless core checks.
   let r20 = @lib.check_stateless_discover(session)
   push_all(results, r20)

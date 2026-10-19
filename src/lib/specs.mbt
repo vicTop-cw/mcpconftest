@@ -82,6 +82,47 @@ fn resolve_title(e : SpecEntry) -> String {
   }
 }
 
+///| Render the check category list as JSON (name/description pairs),
+///| spec-driven when possible. Same single source as list_checks_spec().
+pub fn list_checks_meta_json() -> Json {
+  let entries = load_specs()
+  let items : Array[Json] = []
+  if entries.length() == 0 {
+    // Fallback: parse the static catalog rendered by list_checks_spec().
+    for line in list_checks_spec() {
+      let parts = line.split(" — ").to_array()
+      let name = parts[0].to_owned()
+      let desc = if parts.length() > 1 {
+        parts[1].to_owned()
+      } else {
+        ""
+      }
+      items.push(
+        Json::object({
+          "name": Json::string(name),
+          "description": Json::string(desc),
+        }),
+      )
+    }
+    return Json::array(items)
+  }
+  for e in entries {
+    let desc = resolve_title(e)
+    let fp = if e.fingerprint.length() > 0 {
+      " (\{e.fingerprint})"
+    } else {
+      ""
+    }
+    items.push(
+      Json::object({
+        "name": Json::string(e.check_id),
+        "description": Json::string(desc + fp),
+      }),
+    )
+  }
+  Json::array(items)
+}
+
 ///| Render the check category list, spec-driven when possible.
 pub fn list_checks_spec() -> Array[String] {
   let entries = load_specs()

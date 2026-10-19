@@ -21,7 +21,7 @@ iex ((irm https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/b
 #    Linux / WSL
 # curl -fsSL https://raw.githubusercontent.com/vicTop-cw/mcpconftest/main/scripts/blackbox/install.sh | bash
 
-# 2. 探测内建 fixture（无需外部 server；35/47 pass, 8 fail 为预期违规）
+# 2. 探测内建 fixture（无需外部 server；38/58 pass, 15 fail 为预期违规）
 mcpconftest run --fixture
 
 # 3. 查报告
@@ -48,7 +48,7 @@ Running against the built-in partially-compliant fixture:
 ```
 $ moon run cmd -- run
 probing fixture server
-[fixture] 20/32 pass, 8 fail
+[fixture] 38/58 pass, 15 fail
 report written: ./mcpconftest-report/report.{json,md,html}
 mcpconftest: ALL GREEN (fixture)
 ```
@@ -63,12 +63,12 @@ Protocol: 2026-07-28
 ## Summary
 | Metric | Count |
 |---|---|
-| Pass | 20 |
-| Fail | 8 |
-| Skip | 4 |
+| Pass | 38 |
+| Fail | 15 |
+| Skip | 5 |
 | Warn | 0 |
-| Total timing | 141ms |
-| Avg per check | 4ms |
+| Total timing | 0ms |
+| Avg per check | 0ms |
 ```
 
 Sample findings — fixture deliberately violates spec to prove detection works:
@@ -97,7 +97,7 @@ Exit code: `0` (ALL GREEN) — fixture is *expected* to have failures; the probe
 
 ```bash
 # CLI 四子命令（安装后直接 `mcpconftest`；开发态等价 `moon run cmd --`）
-mcpconftest version        # mcpconftest v0.7.0
+mcpconftest version        # mcpconftest v0.8.0
 mcpconftest list-checks    # 列出全部检查类别
 mcpconftest run --server "node my-mcp-server.js"          # 探测指定 MCP server（stdio）
 mcpconftest run --server "mcp-server-A" --server "mcp-server-B"   # 多 server 并行
@@ -153,7 +153,7 @@ Every run writes to the report directory:
 - `report.html` — standalone styled page (collapsible details)
 - `report-junit.xml` — JUnit XML, only with `--junit` (CI-native)
 
-## Check categories (v1.0, spec-driven)
+## Check categories (v0.8.0, spec-driven)
 
 28 类检查项由 `specs/` 单一真源驱动（运行时装配 + sha256 指纹）。
 
@@ -242,6 +242,7 @@ src/lib/
 cmd/main.mbt      — CLI entry: run / list-checks / version / serve
 tests/fixtures/   — deliberately partially-compliant MCP server (node)
 scripts/ci.sh     — CI gate
+scripts/gen_apply_pdf_mcpconftest.py — 生成一页《项目申报书》PDF（A4, fpdf2）；用法: `python scripts/gen_apply_pdf_mcpconftest.py [out.pdf]`（依赖: `pip install fpdf2`；自动查找 Windows 中文字体 simhei/msyh/simsun）
 scripts/verify-specs.ps1   — L1 门禁（规格 vs list-checks 一致性）
 scripts/verify-corpus.ps1  — L3 门禁（语料覆盖 100%）
 scripts/new-check.ps1      — 新增检查项脚手架
@@ -258,7 +259,7 @@ docs/fist-data-isolation.md — FIST 数据目录隔离说明
 
 ## License
 
-MIT
+Apache-2.0
 
 ## 仓库同步
 

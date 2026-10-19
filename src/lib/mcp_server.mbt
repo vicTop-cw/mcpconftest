@@ -1,63 +1,18 @@
 ///| MCP server builder — exposes mcpconftest as an MCP stdio server.
 ///| Registers three tools:
 ///|   - run_probe: run the conformance probe against one or more servers
-///|   - list_checks: list the 19 conformance check categories
+///|   - list_checks: list the 28 conformance check categories (spec-driven)
 ///|   - version: report the server version
 ///|
 ///| The returned `@mcp.MCPServer` is driven by the target-specific stdio
 ///| loop in `cmd/serve_io_js.mbt` / `cmd/serve_io_native.mbt`.
 
-///| Metadata for the 19 conformance check categories exposed by list_checks.
-///| Extracted from the check functions in checks.mbt.
+///| Metadata for the 28 conformance check categories exposed by list_checks.
+///| Spec-driven: delegates to specs.list_checks_meta_json() so the serve
+///| tool output always matches the CLI list-checks catalog (19 stateful +
+///| 9 stateless categories, single source of truth L1).
 pub fn list_checks_meta() -> Json {
-  let items : Array[Json] = []
-  let defs = [
-    (
-      "initialize",
-      "Handshake: jsonrpc=2.0, serverInfo present, protocolVersion=2026-07-28",
-    ),
-    (
-      "capabilities",
-      "Declared capabilities match observed server behavior",
-    ),
-    ("tools/list", "Tool schema conformance (name/description mandatory)"),
-    (
-      "tools/call",
-      "Tool invocation result and unknown-method error path (-32601)",
-    ),
-    (
-      "notifications",
-      "Session stays alive after unknown notifications (no response expected)",
-    ),
-    ("idempotency", "Repeated identical requests are handled consistently"),
-    (
-      "resources",
-      "resources/list + resources/read schema and error path",
-    ),
-    ("prompts/list", "Prompt schema conformance (name mandatory)"),
-    ("ping", "Spec-mandated ping request/response round-trip"),
-    ("keepalive", "Session stability across an idle period"),
-    (
-      "protocol_negotiation",
-      "Version matrix across supported protocol versions",
-    ),
-    ("logging", "Logging notification support (no crash, optional ack)"),
-    ("completion", "Completion request/response round-trip"),
-    ("subscribe", "resources/subscribe and notifications/resources/updated flow"),
-    ("sampling", "Sampling request handling (createMessage, optional ack)"),
-    ("batch", "JSON-RPC batch request handling"),
-    ("id_matching", "JSON-RPC id matching between request and response"),
-    ("error_schema", "Error response schema conformance (code/message)"),
-  ]
-  for (name, desc) in defs {
-    items.push(
-      Json::object({
-        "name": Json::string(name),
-        "description": Json::string(desc),
-      }),
-    )
-  }
-  Json::array(items)
+  list_checks_meta_json()
 }
 
 ///| Build the MCP server with the run_probe / list_checks / version tools.

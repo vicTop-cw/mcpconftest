@@ -32,7 +32,7 @@ moon run cmd -- run
 Output:
 ```
 probing fixture server
-[fixture] 20/32 pass, 8 fail
+[fixture] 38/58 pass, 15 fail
 report written: ./mcpconftest-report/report.{json,md,html}
 mcpconftest: ALL GREEN (fixture)
 ```

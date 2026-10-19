@@ -49,19 +49,19 @@ powershell -ExecutionPolicy Bypass -File scripts\blackbox\release_zip.ps1
 再本地安装：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\blackbox\install_onecmd.ps1 -Version 0.7.0 -LocalZip _release\mcpconftest-js-v0.7.0.zip
+powershell -ExecutionPolicy Bypass -File scripts\blackbox\install_onecmd.ps1 -Version 0.8.0 -LocalZip _release\mcpconftest-js-v0.8.0.zip
 ```
 
 ```bash
-MCP_LOCAL_ZIP=_release/mcpconftest-js-v0.7.0.zip bash scripts/blackbox/install.sh
+MCP_LOCAL_ZIP=_release/mcpconftest-js-v0.8.0.zip bash scripts/blackbox/install.sh
 ```
 
 ## 安装后
 
 ```bash
-mcpconftest version        # mcpconftest v0.7.0
+mcpconftest version        # mcpconftest v0.8.0
 mcpconftest list-checks    # 列出全部检查类别
-mcpconftest run --fixture  # 对内建 fixture 全量探测（35/47 pass, 8 fail 为预期违规）
+mcpconftest run --fixture  # 对内建 fixture 全量探测（38/58 pass, 15 fail 为预期违规）
 mcpconftest serve          # 以 MCP server 形态启动（stdio），暴露 version / run_probe / list_checks 三个工具
 ```
 
@@ -148,7 +148,7 @@ fist version              # FIST-Mbt v0.3.6（moon.mod version 单一真源）
 mcpconftest 安装器末尾的自检输出与之一致：
 
 ```
-[ok] mcpconftest (PATH) → mcpconftest v0.7.0  <-- mcpconftest 命令已注册
+[ok] mcpconftest (PATH) → mcpconftest v0.8.0  <-- mcpconftest 命令已注册
 ```
 
 即"一行命令安装和注册"验收标准：**shim 四件齐 + 用户级 PATH 已注册 + 命令可从 PATH 解析并输出版本**。

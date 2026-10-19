@@ -1,20 +1,29 @@
-mcpconftest check categories (baseline @ v0.8.0 / tag v0.8.1-baseline):
-  - initialize — jsonrpc, server_info, protocol_version
-  - capabilities — response structure
-  - tools/list — tool schema (name, description mandatory)
-  - tools/call — error path (-32601 for unknown tool)
-  - notifications — session liveness after unknown notifications
-  - idempotency — repeated identical requests
-  - resources/list, resources/read — resource schema + error path
-  - prompts/list — prompt schema (name mandatory)
-  - ping, keepalive — spec-mandated ping + session stability
-  - protocol negotiation — version matrix (4 protocols)
-  - logging/setLevel — logging capability
-  - completion/complete — prompt completion
-  - resources/subscribe — subscription capability
-  - sampling/createMessage — sampling capability
-  - batch — JSON-RPC batch request handling
-  - id_matching — JSON-RPC id matching between request and response
-  - error_schema — Error response schema conformance (code/message)
-  - resources_read_error — resources/read error path (-32602 / missing resource)
-  - notifications_initialized — initialized notification handling
+mcpconftest check categories (baseline @ v0.8.0 / tag v0.8.1-baseline, 28 categories):
+  - mcp.core.initialize — initialize 握手检查 (sha256:815d5f0ceb84217cbcfa58b3fd288acf0e5cdbead9435303a81cc5f13007898c)
+  - mcp.core.capabilities — capabilities 响应结构检查 (sha256:8637b22db2ba0327f849f5a98bfcc43b0e120c5c0ff896223fc29832f87304ae)
+  - mcp.tools.list — tools/list 工具 schema 检查 (sha256:8cbfd1c61fb27e0c9b9048d56c9017af1de60b88146e281fda5a38888b61ee28)
+  - mcp.tools.call — tools/call 错误路径检查 (sha256:ba8e614903ee2e6c445677e54c4d0b70f35b62adca184365e6aebb2897bb5280)
+  - mcp.session.notifications — 未知通知后会话活性检查 (sha256:c3605f1be7e38ff281aa74ff6f6e0084285de923982b07424121e65252da1cba)
+  - mcp.session.idempotency — 重复请求幂等性检查 (sha256:6a3bc37f508c0437bdb081765f746536e299517b755c739976cdcfbd4cca78a2)
+  - mcp.resources.list — resources/list schema 检查 (sha256:deb9a7a2512fca7c263b81b2332729c815323347e3be1581f06c87271097a9f8)
+  - mcp.resources.read_error — resources/read 错误路径检查 (sha256:8c5fcd90bb5991289c973e2719765219ec9a3c037fae275d433724f1386e579e)
+  - mcp.prompts.list — prompts/list schema 检查 (sha256:404a6d3c4fbf819705dd35528ac4494f2ada8b18709f5ecf3dbdbc319c0ce325)
+  - mcp.transport.ping — ping 保活检查 (sha256:cb3dac0c70f207979b7d2315ed116db46e00e5024c8404435a53d4f346095a0e)
+  - mcp.transport.keepalive — 长会话稳定性检查 (sha256:2ac0cadfb3553b298581fee8b1ab4a392a8aadb447c703138c9ac100055b37a8)
+  - mcp.protocol.negotiation — 版本协商矩阵 (sha256:5d2daed0366848e9c471a325a57c4982904cceedae1f2b0ee925c334d518f44d)
+  - mcp.logging.setlevel — logging/setLevel 能力检查 (sha256:dd0429876356e239ce973cfb17242e3d8849acbdc9f9c3c630e710fd00004008)
+  - mcp.completion.complete — prompt 补全检查 (sha256:c7abddb46345d606cba00f870c5387d79c14ad1d240197da60c0a180ebeddb3e)
+  - mcp.resources.subscribe — resources/subscribe 订阅能力检查 (sha256:6d3bb7c8f37e74a318753f4c05ce9768b60cc28bc481e9c6683c3c508d9511a6)
+  - mcp.sampling.create_message — sampling/createMessage 能力检查 (sha256:34f69fd7d12fc97c964ca0a706a97c5f742332e9251fc8cfbb55b3b9f5080535)
+  - mcp.protocol.batch — JSON-RPC 批量请求处理检查 (sha256:f3c1378a19cbec7900f0a891b2dcbc4e81c983972c6edd9d3a302e65fd541604)
+  - mcp.protocol.id_matching — JSON-RPC id 匹配检查 (sha256:8f5e6f14f2c39fdf8fdd5f5af0e656a067b1adc7935e2255eb556f5ec6f8c78b)
+  - mcp.protocol.error_schema — Error 响应 schema 符合性检查 (sha256:fbbf2fbdd2b512c3f03801c936b2aed707fc9177f2eec6dac878c63f7fac415a)
+  - mcp.stateless.discover — 无状态能力发现 (sha256:496c25d728d6f9bfd620e5d110b487b2a3ce05414a294a38f78be99f65991a38)
+  - mcp.stateless.version_negotiation — 版本协商内联化 (sha256:0958cf5f705cd5ddb92ce351b2faa915a5d71a74195a47107327db8f09b5ab4c)
+  - mcp.stateless.self_describing — 每请求自描述 _meta (sha256:fb369c5953eea41685903ea6f0bde26feaaa0f820cae7f0b14ec7e18de73bb2e)
+  - mcp.stateless.missing_capability — 缺失能力返回 -32021 (sha256:81485e6c9c2a808d5287cdfc70b4aa4f43030821dbd5f440001b9271532dd1a7)
+  - mcp.stateless.list_cache — 列表结果缓存提示 (sha256:da0b7bf643efae4fe7d98966baa73efd317adb63a80e9a23059a9dcca616041c)
+  - mcp.stateless.schema_2020_12 — Tools JSON Schema 2020-12 合规 (sha256:08a4cf76d83367335119447d057fc54666b093170403984fc5a8a3805bc7a027)
+  - mcp.stateless.resource_error_code — 资源未找到错误码 -32602 (sha256:369275b262ed28150358da1d6cf43b6716e5712601daac8cde16fb6f739e40b6)
+  - mcp.stateless.mrtr — MRTR input_required 往返 (sha256:dbfc5eb4428b8649a94029a58863ee5383ec39796914fc8a0eb44502f17604a1)
+  - mcp.stateless.deprecations — Roots/Sampling/Logging 弃用标注 (sha256:a450f6d74efc57f47477e0847a0a445dc0ef0fda5d459fd52b3001dfe7285f9a)
