@@ -1,10 +1,11 @@
-///| mcpconftest CLI entry — subcommands: run, list-checks, version, serve
-
-fn cli_exit(code : Int) -> Unit {
+///|
+/// mcpconftest CLI entry — subcommands: run, list-checks, version, serve
+fn cli_exit(code : Int32) -> Unit {
   @sys.exit(code)
 }
 
-///| Print available check categories (spec-driven, L1).
+///|
+/// Print available check categories (spec-driven, L1).
 fn list_checks() -> Unit {
   let checks = @lib.list_checks_spec()
   println("mcpconftest check categories:")
@@ -14,32 +15,54 @@ fn list_checks() -> Unit {
 }
 
 ///| Run probe against servers (or built-in fixture if --fixture given).
-async fn cmd_run(servers : Array[String], report_dir : String, junit : Bool, fixture : Bool) -> Result[Unit, String] {
-  let (all_ok, _results, label) = if fixture {
+
+///|
+/// IRON LAW R6: prints the verdict; a non-"pass" verdict exits non-zero.
+async fn cmd_run(
+  servers : Array[String],
+  report_dir : String,
+  junit : Bool,
+  fixture : Bool,
+) -> Result[Unit, String] {
+  let (all_ok, results, label) = if fixture {
     let r = @lib.run_fixture()
     (r.ok, r.results, r.cmd)
   } else {
     @lib.run_probe(servers, report_dir, junit)
   }
+  let report = @lib.build_report(results, label, "2026-07-28", @lib.now_iso())
+  if fixture && report_dir.length() > 0 {
+    match report.write_to_dir(report_dir, junit) {
+      Ok(_) => println("report written: \{report_dir}/report.{json,md,html}")
+      Err(e) => println("WARN: report write failed: \{e}")
+    }
+  }
   if all_ok {
     println("mcpconftest: ALL GREEN (\{label})")
   } else {
     println("mcpconftest: FAILURES DETECTED (\{label})")
+  }
+  let verdict = report.verdict()
+  println("VERDICT: \{verdict}")
+  if verdict != "pass" || !all_ok {
     cli_exit(1)
   }
   Ok(())
 }
 
 ///|
-async fn main raise {
+async fn main {
   let args = @env.args()
   // argv layout differs between backends:
   //   js:     [node, bundle.js, <subcmd>, ...]
   //   native: [exe, <subcmd>, ...]
   // Locate the first positional subcommand keyword.
   let mut sub_i = -1
-  for k in 1 ..< args.length() {
-    if args[k] == "run" || args[k] == "list-checks" || args[k] == "version" || args[k] == "serve" {
+  for k in 1..<args.length() {
+    if args[k] == "run" ||
+      args[k] == "list-checks" ||
+      args[k] == "version" ||
+      args[k] == "serve" {
       sub_i = k
       break
     }
@@ -47,7 +70,9 @@ async fn main raise {
   if sub_i < 0 {
     println("mcpconftest v\{@lib.version()}")
     println("Usage:")
-    println("  moon run cmd -- run [--server <cmd>]+ [--report <dir>] [--junit] [--fixture]")
+    println(
+      "  moon run cmd -- run [--server <cmd>]+ [--report <dir>] [--junit] [--fixture]",
+    )
     println("  moon run cmd -- list-checks")
     println("  moon run cmd -- version")
     println("  moon run cmd -- serve")

@@ -2,13 +2,15 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/debug",
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/async",
   "moonbitlang/async/js_async",
   "moonbitlang/async/io",
   "moonbitlang/async/process",
   "moonbitlang/async/websocket" @async_ws,
   "moonbitlang/x/fs",
-  "colmugx/mcp" @mcp,
+  "moonbitlang/x/crypto",
+  "colmugx/mcp",
   "colmugx/mcp/protocol/types" @mcp_types,
   "vicTop-cw/fist-mbt" @fist,
 }
@@ -21,14 +23,19 @@ supported_targets = "js+native"
 warnings = "-29-67"
 
 options(
-  link: { "native": { "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib" } },
+  link: {
+    "native": {
+      "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib",
+    },
+  },
   targets: {
-  "probe_io_js.mbt": ["js"],
-  "probe_io_native.mbt": ["native"],
-  "session_io_js.mbt": ["js"],
-  "session_io_native.mbt": ["native"],
-  "report_fs_js.mbt": ["js"],
-  "report_fs_native.mbt": ["native"],
-  "spec_io_js.mbt": ["js"],
-  "spec_io_native.mbt": ["native"],
-})
+    "probe_io_js.mbt": [ "js" ],
+    "probe_io_native.mbt": [ "native" ],
+    "session_io_js.mbt": [ "js" ],
+    "session_io_native.mbt": [ "native" ],
+    "report_fs_js.mbt": [ "js" ],
+    "report_fs_native.mbt": [ "native" ],
+    "spec_io_js.mbt": [ "js" ],
+    "spec_io_native.mbt": [ "native" ],
+  },
+)

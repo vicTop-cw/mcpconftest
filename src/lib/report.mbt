@@ -1,33 +1,66 @@
-///| Render report as JSON string.
+///| IRON LAW R6: classify the whole run.
+
+///| - "fail": at least one HARD failure (hard=true) — must never be "pass".
+
+///| - "inconclusive": no hard failure but at least one Skip without a reason.
+
+///| - "pass": otherwise (soft failures are tolerated by the verdict; they are
+
+///|
+///   still reported and counted, but do not block a pass verdict).
+pub fn Report::verdict(self : Report) -> String {
+  for r in self.results {
+    if r.severity == Fail && r.hard {
+      return "fail"
+    }
+  }
+  for r in self.results {
+    if r.severity == Skip && r.skip_reason.length() == 0 {
+      return "inconclusive"
+    }
+  }
+  "pass"
+}
+
+///|
+/// Render report as JSON string.
 pub fn Report::to_json(self : Report) -> String {
   let sum = self.summarize()
-  let get_n = (k : String) => match sum.get(k) {
-    Some(v) => v
-    None => 0
+  let get_n = (k : String) => {
+    match sum.get(k) {
+      Some(v) => v
+      None => 0
+    }
   }
-  let arr = Json::array(self.results.map(fn(r) {
-    let sev = match r.severity {
-      Pass => Json::string("pass")
-      Fail => Json::string("fail")
-      Skip => Json::string("skip")
-      Warn => Json::string("warn")
-    }
-    let ev = match r.evidence {
-      Some(e) => Json::string(e)
-      None => Json::string("")
-    }
-    Json::object({
-      "name": Json::string(r.name),
-      "severity": sev,
-      "message": Json::string(r.message),
-      "evidence": ev,
-      "timing_ms": Json::number(r.timing_ms.to_double()),
-    })
-  }))
+  let arr = Json::array(
+    self.results.map(fn(r) {
+      let sev = match r.severity {
+        Pass => Json::string("pass")
+        Fail => Json::string("fail")
+        Skip => Json::string("skip")
+        Warn => Json::string("warn")
+      }
+      let ev = match r.evidence {
+        Some(e) => Json::string(e)
+        None => Json::string("")
+      }
+      Json::object({
+        "name": Json::string(r.name),
+        "severity": sev,
+        "message": Json::string(r.message),
+        "evidence": ev,
+        "timing_ms": Json::number(r.timing_ms.to_double()),
+        "skip_reason": Json::string(r.skip_reason),
+        "hard": Json::boolean(r.hard),
+      })
+    }),
+  )
   Json::object({
     "server_cmd": Json::string(self.server_cmd),
     "protocol_version": Json::string(self.protocol_version),
     "timestamp": Json::string(self.timestamp),
+    "spec_fingerprint": Json::string(self.spec_fingerprint),
+    "verdict": Json::string(self.verdict()),
     "results": arr,
     "summary": Json::object({
       "pass": Json::number(get_n("pass").to_double()),
@@ -40,12 +73,15 @@ pub fn Report::to_json(self : Report) -> String {
   }).stringify()
 }
 
-///| Render report as Markdown string.
+///|
+/// Render report as Markdown string.
 pub fn Report::to_markdown(self : Report) -> String {
   let sb = StringBuilder()
   ignore(sb.write_string("# mcpconftest report\n\n"))
   ignore(sb.write_string("Server: `\{self.server_cmd}`\n\n"))
   ignore(sb.write_string("Protocol: \{self.protocol_version}\n\n"))
+  ignore(sb.write_string("Spec fingerprint: `\{self.spec_fingerprint}`\n\n"))
+  ignore(sb.write_string("Verdict: **\{self.verdict()}**\n\n"))
   ignore(sb.write_string("Timestamp: \{self.timestamp}\n\n"))
   let p = match self.summary.get("pass") {
     Some(v) => v
@@ -80,22 +116,36 @@ pub fn Report::to_markdown(self : Report) -> String {
       Skip => "⏭️"
       Warn => "⚠️"
     }
-    ignore(sb.write_string("### \{icon} \{r.name} (\{r.timing_ms}ms)\n\n"))
+    let tag = match r.severity {
+      Fail => if r.hard { " (HARD)" } else { " (SOFT)" }
+      Skip =>
+        if r.skip_reason.length() > 0 {
+          " (skip: \{r.skip_reason})"
+        } else {
+          " (NO REASON)"
+        }
+      _ => ""
+    }
+    ignore(
+      sb.write_string("### \{icon} \{r.name}\{tag} (\{r.timing_ms}ms)\n\n"),
+    )
     ignore(sb.write_string("\{r.message}\n\n"))
     match r.evidence {
-      Some(e) if e.length() > 0 => ignore(sb.write_string("```json\n\{e}\n```\n\n"))
+      Some(e) if e.length() > 0 =>
+        ignore(sb.write_string("```json\n\{e}\n```\n\n"))
       _ => ()
     }
   }
   sb.to_string()
 }
 
-///| Aggregate all check results into a full report.
+///|
+/// Aggregate all check results into a full report.
 pub fn build_report(
   results : Array[CheckResult],
   cmd : String,
   ver : String,
-  ts : String
+  ts : String,
 ) -> Report {
   let r = {
     server_cmd: cmd,
@@ -105,44 +155,96 @@ pub fn build_report(
     timestamp: ts,
     total_timing_ms: 0,
     avg_timing_ms: 0,
+    spec_fingerprint: specs_fingerprint(),
   }
   r.summary = r.summarize()
   r
 }
 
-///| Escape HTML special characters.
+///|
+/// Escape HTML special characters.
 fn html_escape(s : String) -> String {
-  s.replace(old="&", new="&amp;")
+  s
+  .replace(old="&", new="&amp;")
   .replace(old="<", new="&lt;")
   .replace(old=">", new="&gt;")
   .replace(old="\"", new="&quot;")
 }
 
-///| Render report as a standalone HTML page.
+///|
+/// Render report as a standalone HTML page.
 pub fn Report::to_html(self : Report) -> String {
   let sum = self.summarize()
-  let get_n = (k : String) => match sum.get(k) {
-    Some(v) => v
-    None => 0
+  let get_n = (k : String) => {
+    match sum.get(k) {
+      Some(v) => v
+      None => 0
+    }
   }
   let sb = StringBuilder()
   ignore(sb.write_string("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"))
   ignore(sb.write_string("<meta charset=\"utf-8\">\n"))
-  ignore(sb.write_string("<title>mcpconftest report — \{html_escape(self.server_cmd)}</title>\n"))
+  ignore(
+    sb.write_string(
+      "<title>mcpconftest report — \{html_escape(self.server_cmd)}</title>\n",
+    ),
+  )
   ignore(sb.write_string("<style>\n"))
-  ignore(sb.write_string("body{font-family:system-ui,sans-serif;margin:2rem;color:#1a1a2e}\n"))
-  ignore(sb.write_string("h1{border-bottom:2px solid #16213e}table{border-collapse:collapse;margin:1rem 0}\n"))
-  ignore(sb.write_string("td,th{border:1px solid #ccc;padding:.4rem .8rem;text-align:left}\n"))
-  ignore(sb.write_string(".pass{color:#0a7d32}.fail{color:#c0392b;font-weight:bold}.skip{color:#888}.warn{color:#b8860b}\n"))
+  ignore(
+    sb.write_string(
+      "body{font-family:system-ui,sans-serif;margin:2rem;color:#1a1a2e}\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "h1{border-bottom:2px solid #16213e}table{border-collapse:collapse;margin:1rem 0}\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "td,th{border:1px solid #ccc;padding:.4rem .8rem;text-align:left}\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      ".pass{color:#0a7d32}.fail{color:#c0392b;font-weight:bold}.skip{color:#888}.warn{color:#b8860b}\n",
+    ),
+  )
   ignore(sb.write_string("details{margin:.5rem 0}summary{cursor:pointer}\n"))
-  ignore(sb.write_string("pre{background:#f4f4f8;padding:.6rem;overflow-x:auto}\n"))
+  ignore(
+    sb.write_string("pre{background:#f4f4f8;padding:.6rem;overflow-x:auto}\n"),
+  )
   ignore(sb.write_string("</style>\n</head>\n<body>\n"))
   ignore(sb.write_string("<h1>mcpconftest report</h1>\n"))
-  ignore(sb.write_string("<p>Server: <code>\{html_escape(self.server_cmd)}</code><br>\n"))
-  ignore(sb.write_string("Protocol: \{html_escape(self.protocol_version)}<br>\n"))
+  ignore(
+    sb.write_string(
+      "<p>Server: <code>\{html_escape(self.server_cmd)}</code><br>\n",
+    ),
+  )
+  ignore(
+    sb.write_string("Protocol: \{html_escape(self.protocol_version)}<br>\n"),
+  )
+  ignore(
+    sb.write_string(
+      "Spec fingerprint: <code>\{html_escape(self.spec_fingerprint)}</code><br>\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "Verdict: <strong>\{html_escape(self.verdict())}</strong><br>\n",
+    ),
+  )
   ignore(sb.write_string("Timestamp: \{html_escape(self.timestamp)}</p>\n"))
-  ignore(sb.write_string("<h2>Summary</h2>\n<table><tr><th>Pass</th><th>Fail</th><th>Skip</th><th>Warn</th></tr>\n"))
-  ignore(sb.write_string("<tr><td>\{get_n("pass")}</td><td>\{get_n("fail")}</td><td>\{get_n("skip")}</td><td>\{get_n("warn")}</td></tr></table>\n"))
+  ignore(
+    sb.write_string(
+      "<h2>Summary</h2>\n<table><tr><th>Pass</th><th>Fail</th><th>Skip</th><th>Warn</th></tr>\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "<tr><td>\{get_n("pass")}</td><td>\{get_n("fail")}</td><td>\{get_n("skip")}</td><td>\{get_n("warn")}</td></tr></table>\n",
+    ),
+  )
   ignore(sb.write_string("<h2>Details</h2>\n"))
   for r in self.results {
     let cls = match r.severity {
@@ -157,7 +259,11 @@ pub fn Report::to_html(self : Report) -> String {
       Skip => "&#9209;&#65039;"
       Warn => "&#9888;&#65039;"
     }
-    ignore(sb.write_string("<details><summary><span class=\"\{cls}\">\{icon} \{html_escape(r.name)}</span> — \{html_escape(r.message)}</summary>\n"))
+    ignore(
+      sb.write_string(
+        "<details><summary><span class=\"\{cls}\">\{icon} \{html_escape(r.name)}</span> — \{html_escape(r.message)}</summary>\n",
+      ),
+    )
     match r.evidence {
       Some(e) if e.length() > 0 =>
         ignore(sb.write_string("<pre>\{html_escape(e)}</pre>\n"))
@@ -169,19 +275,35 @@ pub fn Report::to_html(self : Report) -> String {
   sb.to_string()
 }
 
-///| Render report as JUnit XML (CI-native test results).
+///|
+/// Render report as JUnit XML (CI-native test results).
 pub fn Report::to_junit(self : Report) -> String {
   let sum = self.summarize()
-  let get_n = (k : String) => match sum.get(k) {
-    Some(v) => v
-    None => 0
+  let get_n = (k : String) => {
+    match sum.get(k) {
+      Some(v) => v
+      None => 0
+    }
   }
   let sb = StringBuilder()
   let total = self.results.length()
   let failures = get_n("fail")
   ignore(sb.write_string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"))
-  ignore(sb.write_string("<testsuites name=\"mcpconftest\" tests=\"\{total}\" failures=\"\{failures}\">\n"))
-  ignore(sb.write_string("<testsuite name=\"mcpconftest.\{html_escape(self.server_cmd)}\" tests=\"\{total}\" failures=\"\{failures}\">\n"))
+  ignore(
+    sb.write_string(
+      "<!-- spec_fingerprint=\{html_escape(self.spec_fingerprint)} verdict=\{html_escape(self.verdict())} -->\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "<testsuites name=\"mcpconftest\" tests=\"\{total}\" failures=\"\{failures}\">\n",
+    ),
+  )
+  ignore(
+    sb.write_string(
+      "<testsuite name=\"mcpconftest.\{html_escape(self.server_cmd)}\" tests=\"\{total}\" failures=\"\{failures}\">\n",
+    ),
+  )
   for r in self.results {
     let sev_tag = match r.severity {
       Pass => ""
@@ -190,24 +312,46 @@ pub fn Report::to_junit(self : Report) -> String {
       Warn => "skipped"
     }
     if sev_tag == "" {
-      ignore(sb.write_string("<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\"/>\n"))
+      ignore(
+        sb.write_string(
+          "<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\"/>\n",
+        ),
+      )
     } else if sev_tag == "skipped" {
-      ignore(sb.write_string("<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\"><skipped/>\n"))
+      ignore(
+        sb.write_string(
+          "<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\"><skipped/>\n",
+        ),
+      )
       ignore(sb.write_string("</testcase>\n"))
     } else {
       let msg = match r.evidence {
         Some(e) if e.length() > 0 => "\{r.message} | evidence: \{e}"
         _ => r.message
       }
-      ignore(sb.write_string("<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\">\n"))
-      ignore(sb.write_string("<failure message=\"\{html_escape(r.message)}\">\{html_escape(msg)}</failure>\n"))
+      ignore(
+        sb.write_string(
+          "<testcase name=\"\{html_escape(r.name)}\" classname=\"mcpconftest\">\n",
+        ),
+      )
+      ignore(
+        sb.write_string(
+          "<failure message=\"\{html_escape(r.message)}\">\{html_escape(msg)}</failure>\n",
+        ),
+      )
       ignore(sb.write_string("</testcase>\n"))
     }
   }
   ignore(sb.write_string("</testsuite>\n</testsuites>\n"))
   sb.to_string()
 }
-pub fn Report::write_to_dir(self : Report, dir : String, with_junit : Bool) -> Result[Unit, String] {
+
+///|
+pub fn Report::write_to_dir(
+  self : Report,
+  dir : String,
+  with_junit : Bool,
+) -> Result[Unit, String] {
   if fs_mkdir_p(dir) != 0 {
     return Err("mkdir failed: \{dir}")
   }
