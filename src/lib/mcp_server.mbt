@@ -1,21 +1,33 @@
 ///| MCP server builder — exposes mcpconftest as an MCP stdio server.
+
 ///| Registers three tools:
+
 ///|   - run_probe: run the conformance probe against one or more servers
+
 ///|   - list_checks: list the 28 conformance check categories (spec-driven)
+
 ///|   - version: report the server version
+
 ///|
+
 ///| The returned `@mcp.MCPServer` is driven by the target-specific stdio
+
 ///| loop in `cmd/serve_io_js.mbt` / `cmd/serve_io_native.mbt`.
 
 ///| Metadata for the 28 conformance check categories exposed by list_checks.
+
 ///| Spec-driven: delegates to specs.list_checks_meta_json() so the serve
+
 ///| tool output always matches the CLI list-checks catalog (19 stateful +
-///| 9 stateless categories, single source of truth L1).
+
+///|
+/// 9 stateless categories, single source of truth L1).
 pub fn list_checks_meta() -> Json {
   list_checks_meta_json()
 }
 
-///| Build the MCP server with the run_probe / list_checks / version tools.
+///|
+/// Build the MCP server with the run_probe / list_checks / version tools.
 pub fn build_mcp_server() -> @mcp.MCPServer {
   let s0 = @mcp.MCPServer::MCPServer("mcpconftest", version())
   let s1 = s0.tool(
@@ -26,7 +38,7 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
       "properties": Json::object({
         "servers": Json::object({
           "type": Json::string("array"),
-          "items": Json::object({"type": Json::string("string")}),
+          "items": Json::object({ "type": Json::string("string") }),
           "description": Json::string(
             "Server launch commands, e.g. [\"node server.js\"]",
           ),
@@ -46,7 +58,9 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
     async fn(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       let servers = parse_servers(args)
       if servers.length() == 0 {
-        return Err(@mcp_types.ToolError("servers must be a non-empty array of strings"))
+        return Err(
+          @mcp_types.ToolError("servers must be a non-empty array of strings"),
+        )
       }
       let report_dir = parse_string(args, "report_dir", "")
       let junit = parse_bool(args, "junit", false)
@@ -69,10 +83,7 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
       if report_dir.is_empty() {
         m.set("report_path", Json::null())
       } else {
-        m.set(
-          "report_path",
-          Json::string(report_dir + "/report.json"),
-        )
+        m.set("report_path", Json::string(report_dir + "/report.json"))
       }
       Ok(@mcp.ToolResult::text(Json::object(m).stringify()))
     },
@@ -102,7 +113,8 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
   with_mcpcf_tools(s3)
 }
 
-///| Extract the servers array from tool arguments.
+///|
+/// Extract the servers array from tool arguments.
 fn parse_servers(args : Json) -> Array[String] {
   match args {
     Object(m) =>
@@ -123,7 +135,8 @@ fn parse_servers(args : Json) -> Array[String] {
   }
 }
 
-///| Extract a string field from tool arguments.
+///|
+/// Extract a string field from tool arguments.
 fn parse_string(args : Json, key : String, default : String) -> String {
   match args {
     Object(m) =>
@@ -135,7 +148,8 @@ fn parse_string(args : Json, key : String, default : String) -> String {
   }
 }
 
-///| Extract a boolean field from tool arguments.
+///|
+/// Extract a boolean field from tool arguments.
 fn parse_bool(args : Json, key : String, default : Bool) -> Bool {
   match args {
     Object(m) =>

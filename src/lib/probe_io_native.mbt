@@ -5,28 +5,33 @@
 /// Howard Hinnant `civil_from_days` algorithm (valid for the full proleptic
 /// Gregorian calendar).
 
-///| Current time in milliseconds (native target, epoch ms).
-pub fn now_ms() -> Int {
+///|
+/// Current time in milliseconds (native target, epoch ms).
+pub fn now_ms() -> Int32 {
   @env.now().to_int()
 }
 
 ///| Current UTC time as an ISO-8601 string with millisecond precision
-///| (native target), e.g. `2026-10-09T12:34:56.789Z`.
+
+///|
+/// (native target), e.g. `2026-10-09T12:34:56.789Z`.
 pub fn now_iso() -> String {
   let ms : Int64 = @env.now().reinterpret_as_int64()
   let ms_per_day : Int64 = 86400000L
   let days = ms / ms_per_day
   let day_ms = ms % ms_per_day
   let hh = day_ms / 3600000L
-  let mm = (day_ms % 3600000L) / 60000L
-  let ss = (day_ms % 60000L) / 1000L
+  let mm = day_ms % 3600000L / 60000L
+  let ss = day_ms % 60000L / 1000L
   let millis = day_ms % 1000L
   let (y, mo, d) = civil_from_days(days)
   "\{pad4(y)}-\{pad2(mo)}-\{pad2(d)}T\{pad2(hh)}:\{pad2(mm)}:\{pad2(ss)}.\{pad3(millis)}Z"
 }
 
 ///| Convert days since 1970-01-01 to a (year, month, day) tuple in the
-///| proleptic Gregorian calendar (Howard Hinnant's algorithm).
+
+///|
+/// proleptic Gregorian calendar (Howard Hinnant's algorithm).
 fn civil_from_days(z : Int64) -> (Int64, Int64, Int64) {
   let z = z + 719468L
   let era = (if z >= 0L { z } else { z - 146096L }) / 146097L
@@ -41,10 +46,16 @@ fn civil_from_days(z : Int64) -> (Int64, Int64, Int64) {
   (y, m, d)
 }
 
+///|
 fn pad2(v : Int64) -> String {
-  if v < 10L { "0" + v.to_string() } else { v.to_string() }
+  if v < 10L {
+    "0" + v.to_string()
+  } else {
+    v.to_string()
+  }
 }
 
+///|
 fn pad3(v : Int64) -> String {
   if v < 10L {
     "00" + v.to_string()
@@ -55,6 +66,7 @@ fn pad3(v : Int64) -> String {
   }
 }
 
+///|
 fn pad4(v : Int64) -> String {
   if v < 10L {
     "000" + v.to_string()

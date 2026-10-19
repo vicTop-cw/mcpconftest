@@ -1,6 +1,6 @@
 import {
   "vicTop-cw/mcpconftest/src/lib",
-  "colmugx/mcp" @mcp,
+  "colmugx/mcp",
   "moonbitlang/async",
   "moonbitlang/async/io",
   "moonbitlang/async/js_async",
@@ -19,8 +19,10 @@ supported_targets = "js+native"
 warnings = "-29-35"
 
 options(
-  link: { "native": { "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib" } },
-  targets: {
-  "serve_io_js.mbt": ["js"],
-  "serve_io_native.mbt": ["native"],
-})
+  link: {
+    "native": {
+      "cc-link-flags": "E:/Tools/aider-py312/Library/lib/sqlite3.lib",
+    },
+  },
+  targets: { "serve_io_js.mbt": [ "js" ], "serve_io_native.mbt": [ "native" ] },
+)

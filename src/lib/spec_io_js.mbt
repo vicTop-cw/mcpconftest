@@ -1,4 +1,5 @@
-///| JS-target implementation of spec manifest reading.
+///|
+/// JS-target implementation of spec manifest reading.
 extern "js" fn spec_read_file(path : String) -> String =
   #| (path) => {
   #|   try {

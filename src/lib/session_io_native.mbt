@@ -14,24 +14,28 @@
 /// WebSocket operations remain stubs (connect returns -1): the native backend
 /// does not support the WS transport yet, matching the js FFI sentinel contract.
 
-///| A live native stdio child session.
+///|
+/// A live native stdio child session.
 priv struct NativeSession {
   reader : @process.ReadFromProcess
   raw_writer : @process.WriteToProcess
   writer : @io.BufferedWriter[@process.WriteToProcess]
 }
 
-///| Global session table (handle -> session). Grows on demand.
-let sessions : Array[Option[NativeSession]] = Array::make(16, None)
+///|
+/// Global session table (handle -> session). Grows on demand.
+let sessions : Array[NativeSession?] = Array::make(16, None)
 
-fn ensure_capacity(id : Int) -> Unit {
+///|
+fn ensure_capacity(id : Int32) -> Unit {
   while sessions.length() <= id {
     sessions.push(None)
   }
 }
 
-///| Spawn a stdio child MCP process. Returns session handle or -1 on failure.
-pub async fn io_spawn(argv : Array[String], workdir : String) -> Int {
+///|
+/// Spawn a stdio child MCP process. Returns session handle or -1 on failure.
+pub async fn io_spawn(argv : Array[String], workdir : String) -> Int32 {
   if argv.length() == 0 {
     return -1
   }
@@ -67,30 +71,39 @@ pub async fn io_spawn(argv : Array[String], workdir : String) -> Int {
   id
 }
 
-///| Write a line to the child's stdin. Returns 0 on success, -1 on failure.
-pub async fn io_write(handle_id : Int, line : String) -> Int {
+///|
+/// Write a line to the child's stdin. Returns 0 on success, -1 on failure.
+pub async fn io_write(handle_id : Int32, line : String) -> Int32 {
   match sessions[handle_id] {
     None => -1
     Some(s) => {
-      s.writer.write(line) catch { _ => return -1 }
-      s.writer.write("\n") catch { _ => return -1 }
-      s.writer.flush() catch { _ => return -1 }
+      s.writer.write(line) catch {
+        _ => return -1
+      }
+      s.writer.write("\n") catch {
+        _ => return -1
+      }
+      s.writer.flush() catch {
+        _ => return -1
+      }
       0
     }
   }
 }
 
 ///| Read one response line from the child's stdout with timeout.
-///| Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
-pub async fn io_read_line(handle_id : Int, timeout_ms : Int) -> String {
+
+///|
+/// Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
+pub async fn io_read_line(handle_id : Int32, timeout_ms : Int32) -> String {
   match sessions[handle_id] {
     None => "__MCP_ERROR__"
     Some(s) => {
-      let line_opt : String? = try {
-        @async.with_timeout(timeout_ms, async fn() {
-          s.reader.read_until("\n") catch { _ => None }
-        })
-      } catch {
+      let line_opt : String? = @async.with_timeout(timeout_ms, async fn() {
+        s.reader.read_until("\n") catch {
+          _ => None
+        }
+      }) catch {
         _ => None
       }
       match line_opt {
@@ -101,8 +114,9 @@ pub async fn io_read_line(handle_id : Int, timeout_ms : Int) -> String {
   }
 }
 
-///| Close a stdio child session (EOF on stdin + close reader).
-pub async fn io_close(handle_id : Int) -> Int {
+///|
+/// Close a stdio child session (EOF on stdin + close reader).
+pub async fn io_close(handle_id : Int32) -> Int32 {
   match sessions[handle_id] {
     None => -1
     Some(s) => {
@@ -114,33 +128,36 @@ pub async fn io_close(handle_id : Int) -> Int {
   }
 }
 
-///| A live native WebSocket session (moonbitlang/async/websocket client).
+///|
+/// A live native WebSocket session (moonbitlang/async/websocket client).
 priv struct NativeWsSession {
   conn : @async_ws.Conn
 }
 
-///| Global WebSocket session table (handle -> session). Grows on demand.
-let ws_sessions : Array[Option[NativeWsSession]] = Array::make(16, None)
+///|
+/// Global WebSocket session table (handle -> session). Grows on demand.
+let ws_sessions : Array[NativeWsSession?] = Array::make(16, None)
 
-fn ws_ensure_capacity(id : Int) -> Unit {
+///|
+fn ws_ensure_capacity(id : Int32) -> Unit {
   while ws_sessions.length() <= id {
     ws_sessions.push(None)
   }
 }
 
-///| Connect a WebSocket MCP session (native). Returns session handle or -1.
-pub async fn io_ws_connect(url : String) -> Int {
-  let conn = @async_ws.Conn::connect(url) catch {
-    _ => return -1
-  }
+///|
+/// Connect a WebSocket MCP session (native). Returns session handle or -1.
+pub async fn io_ws_connect(url : String) -> Int32 {
+  let conn = @async_ws.Conn::connect(url) catch { _ => return -1 }
   let id = ws_sessions.length()
   ws_ensure_capacity(id)
   ws_sessions.set(id, Some({ conn, }))
   id
 }
 
-///| Send a WebSocket message (native). Returns 0 on success, -1 on failure.
-pub async fn io_ws_write(handle_id : Int, message : String) -> Int {
+///|
+/// Send a WebSocket message (native). Returns 0 on success, -1 on failure.
+pub async fn io_ws_write(handle_id : Int32, message : String) -> Int32 {
   match ws_sessions[handle_id] {
     None => -1
     Some(s) => {
@@ -153,27 +170,25 @@ pub async fn io_ws_write(handle_id : Int, message : String) -> Int {
 }
 
 ///| Read one WebSocket response with timeout (native).
-///| Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
-pub async fn io_ws_read(handle_id : Int, timeout_ms : Int) -> String {
+
+///|
+/// Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
+pub async fn io_ws_read(handle_id : Int32, timeout_ms : Int32) -> String {
   match ws_sessions[handle_id] {
     None => "__MCP_ERROR__"
     Some(s) => {
-      let resp : String = try {
-        @async.with_timeout(timeout_ms, async fn() {
-          let msg = s.conn.recv() catch {
-            _ => return "__MCP_ERROR__"
-          }
-          match msg.kind {
-            @async_ws.Text => {
-              let data = msg.read_all() catch {
-                _ => return "__MCP_ERROR__"
-              }
-              data.text() catch { _ => "__MCP_ERROR__" }
+      let resp : String = @async.with_timeout(timeout_ms, async fn() {
+        let msg = s.conn.recv() catch { _ => return "__MCP_ERROR__" }
+        match msg.kind {
+          @async_ws.Text => {
+            let data = msg.read_all() catch { _ => return "__MCP_ERROR__" }
+            data.text() catch {
+              _ => "__MCP_ERROR__"
             }
-            @async_ws.Binary => "__MCP_ERROR__"
           }
-        })
-      } catch {
+          @async_ws.Binary => "__MCP_ERROR__"
+        }
+      }) catch {
         _ => "__MCP_TIMEOUT__"
       }
       resp
@@ -181,8 +196,9 @@ pub async fn io_ws_read(handle_id : Int, timeout_ms : Int) -> String {
   }
 }
 
-///| Close a WebSocket session (native). Returns 0 on success, -1 on failure.
-pub async fn io_ws_close(handle_id : Int) -> Int {
+///|
+/// Close a WebSocket session (native). Returns 0 on success, -1 on failure.
+pub async fn io_ws_close(handle_id : Int32) -> Int32 {
   match ws_sessions[handle_id] {
     None => -1
     Some(s) => {

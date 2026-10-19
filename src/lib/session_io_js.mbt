@@ -1,14 +1,14 @@
-///| JS-target implementations of the low-level session I/O primitives.
+///|
+/// JS-target implementations of the low-level session I/O primitives.
 ///
 /// The session driver logic lives in `session.mbt` (all targets) and calls
 /// the `io_*` async wrappers defined here; the native counterpart lives in
 /// `session_io_native.mbt`. Keeping the `extern "js"` FFI in a js-only file
 /// lets the `src/lib` package build for both `js` and `native` targets.
-
 extern "js" fn js_spawn_mcp(
   argv : FixedArray[String],
   workdir : String,
-) -> @js_async.Promise[Int] =
+) -> @js_async.Promise[Int32] =
   #| async (argv, workdir) => {
   #|   const { spawn } = await import('node:child_process')
   #|   if (!globalThis.__mcp_sessions) globalThis.__mcp_sessions = []
@@ -26,17 +26,19 @@ extern "js" fn js_spawn_mcp(
   #|   }
   #| }
 
-///| Spawn a stdio child MCP process. Returns session handle or -1 on failure.
-pub async fn io_spawn(argv : Array[String], workdir : String) -> Int {
+///|
+/// Spawn a stdio child MCP process. Returns session handle or -1 on failure.
+pub async fn io_spawn(argv : Array[String], workdir : String) -> Int32 {
   js_spawn_mcp(FixedArray::from_array(argv), workdir).wait() catch {
     _ => -1
   }
 }
 
+///|
 extern "js" fn js_mcp_write(
-  handle_id : Int,
+  handle_id : Int32,
   line : String,
-) -> @js_async.Promise[Int] =
+) -> @js_async.Promise[Int32] =
   #| async (handle_id, line) => {
   #|   const session = globalThis.__mcp_sessions[handle_id]
   #|   if (!session || !session.child) return -1
@@ -49,16 +51,18 @@ extern "js" fn js_mcp_write(
   #|   })
   #| }
 
-///| Write a line to the child's stdin. Returns 0 on success, -1 on failure.
-pub async fn io_write(handle_id : Int, line : String) -> Int {
+///|
+/// Write a line to the child's stdin. Returns 0 on success, -1 on failure.
+pub async fn io_write(handle_id : Int32, line : String) -> Int32 {
   js_mcp_write(handle_id, line).wait() catch {
     _ => -1
   }
 }
 
+///|
 extern "js" fn js_mcp_read_line(
-  handle_id : Int,
-  timeout_ms : Int,
+  handle_id : Int32,
+  timeout_ms : Int32,
 ) -> @js_async.Promise[String] =
   #| async (handle_id, timeout_ms) => {
   #|   const session = globalThis.__mcp_sessions[handle_id]
@@ -92,18 +96,22 @@ extern "js" fn js_mcp_read_line(
   #| }
 
 ///| Read one response line from the child's stdout with timeout.
-///| Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
-pub async fn io_read_line(handle_id : Int, timeout_ms : Int) -> String {
+
+///|
+/// Returns `__MCP_TIMEOUT__` / `__MCP_ERROR__` sentinel values on failure.
+pub async fn io_read_line(handle_id : Int32, timeout_ms : Int32) -> String {
   js_mcp_read_line(handle_id, timeout_ms).wait() catch {
     _ => "__MCP_ERROR__"
   }
 }
 
-///| Current time in milliseconds (js target, monotonic).
-extern "js" fn js_now_ms() -> Int =
+///|
+/// Current time in milliseconds (js target, monotonic).
+extern "js" fn js_now_ms() -> Int32 =
   #| () => Date.now()
 
-extern "js" fn js_mcp_close(handle_id : Int) -> @js_async.Promise[Int] =
+///|
+extern "js" fn js_mcp_close(handle_id : Int32) -> @js_async.Promise[Int32] =
   #| async (handle_id) => {
   #|   const session = globalThis.__mcp_sessions[handle_id]
   #|   if (!session) return 0
@@ -119,8 +127,9 @@ extern "js" fn js_mcp_close(handle_id : Int) -> @js_async.Promise[Int] =
   #|   return 0
   #| }
 
-///| Close / kill a stdio child session.
-pub async fn io_close(handle_id : Int) -> Int {
+///|
+/// Close / kill a stdio child session.
+pub async fn io_close(handle_id : Int32) -> Int32 {
   js_mcp_close(handle_id).wait() catch {
     _ => -1
   }
@@ -128,7 +137,8 @@ pub async fn io_close(handle_id : Int) -> Int {
 
 // ---- WebSocket FFI ----
 
-extern "js" fn js_ws_connect(url : String) -> @js_async.Promise[Int] =
+///|
+extern "js" fn js_ws_connect(url : String) -> @js_async.Promise[Int32] =
   #| async (url) => {
   #|   try {
   #|     const WS = globalThis.WebSocket || (await import('ws')).WebSocket
@@ -156,17 +166,19 @@ extern "js" fn js_ws_connect(url : String) -> @js_async.Promise[Int] =
   #|   }
   #| }
 
-///| Connect a WebSocket MCP session. Returns handle or -1 on failure.
-pub async fn io_ws_connect(url : String) -> Int {
+///|
+/// Connect a WebSocket MCP session. Returns handle or -1 on failure.
+pub async fn io_ws_connect(url : String) -> Int32 {
   js_ws_connect(url).wait() catch {
     _ => -1
   }
 }
 
+///|
 extern "js" fn js_ws_write(
-  handle_id : Int,
+  handle_id : Int32,
   message : String,
-) -> @js_async.Promise[Int] =
+) -> @js_async.Promise[Int32] =
   #| async (handle_id, message) => {
   #|   const session = globalThis.__mcp_ws[handle_id]
   #|   if (!session || !session.ws || session.ws.readyState !== 1) return -1
@@ -178,16 +190,18 @@ extern "js" fn js_ws_write(
   #|   }
   #| }
 
-///| Send a WebSocket message. Returns 0 on success, -1 on failure.
-pub async fn io_ws_write(handle_id : Int, message : String) -> Int {
+///|
+/// Send a WebSocket message. Returns 0 on success, -1 on failure.
+pub async fn io_ws_write(handle_id : Int32, message : String) -> Int32 {
   js_ws_write(handle_id, message).wait() catch {
     _ => -1
   }
 }
 
+///|
 extern "js" fn js_ws_read(
-  handle_id : Int,
-  timeout_ms : Int,
+  handle_id : Int32,
+  timeout_ms : Int32,
 ) -> @js_async.Promise[String] =
   #| async (handle_id, timeout_ms) => {
   #|   const session = globalThis.__mcp_ws[handle_id]
@@ -216,14 +230,16 @@ extern "js" fn js_ws_read(
   #|   })
   #| }
 
-///| Read one WebSocket response with timeout. Returns sentinel values on failure.
-pub async fn io_ws_read(handle_id : Int, timeout_ms : Int) -> String {
+///|
+/// Read one WebSocket response with timeout. Returns sentinel values on failure.
+pub async fn io_ws_read(handle_id : Int32, timeout_ms : Int32) -> String {
   js_ws_read(handle_id, timeout_ms).wait() catch {
     _ => "__MCP_ERROR__"
   }
 }
 
-extern "js" fn js_ws_close(handle_id : Int) -> @js_async.Promise[Int] =
+///|
+extern "js" fn js_ws_close(handle_id : Int32) -> @js_async.Promise[Int32] =
   #| async (handle_id) => {
   #|   const session = globalThis.__mcp_ws[handle_id]
   #|   if (!session) return 0
@@ -236,8 +252,9 @@ extern "js" fn js_ws_close(handle_id : Int) -> @js_async.Promise[Int] =
   #|   return 0
   #| }
 
-///| Close a WebSocket session.
-pub async fn io_ws_close(handle_id : Int) -> Int {
+///|
+/// Close a WebSocket session.
+pub async fn io_ws_close(handle_id : Int32) -> Int32 {
   js_ws_close(handle_id).wait() catch {
     _ => -1
   }

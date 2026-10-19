@@ -1,28 +1,30 @@
-﻿///
+///
 /// FIST-Mbt 库级嵌入层：serve 模式下暴露 mcpcf.* 内部工具。
 /// 七工具：ops_init / run_batch / verify / watchdog / report / circuit / review。
 /// 数据隔离：默认 %LOCALAPPDATA%\mcpconftest\data\mcpconftest-ops.db，
 /// 可用环境变量 MCPCONFTEST_DATA_DIR 覆盖（见 docs/fist-data-isolation.md）。
 
-///
+///|
 /// 引擎持有者：内部可变性模式（MoonBit 顶层仅允许 let，可变状态放入 struct mut 字段）。
 priv struct EngineHolder {
   mut engine : @fist.FistEngine?
 }
 
-///
+///|
 /// 模块级引擎（进程内共享的可变状态；handler 闭包直接引用）。
 let holder : EngineHolder = { engine: None, }
 
+///|
 fn set_engine(e : @fist.FistEngine) -> Unit {
   holder.engine = Some(e)
 }
 
+///|
 fn get_engine() -> @fist.FistEngine? {
   holder.engine
 }
 
-///
+///|
 /// 解析运行时数据目录：优先 MCPCONFTEST_DATA_DIR，其次 LOCALAPPDATA，最后 cwd。
 fn ops_data_dir() -> String {
   match @env.get_env_var("MCPCONFTEST_DATA_DIR") {
@@ -35,7 +37,7 @@ fn ops_data_dir() -> String {
   }
 }
 
-///
+///|
 /// 确保引擎已初始化：优先 SQLite（mcpconftest-ops.db），失败回退内存版。
 fn ensure_engine() -> @fist.FistEngine {
   match get_engine() {
@@ -44,7 +46,9 @@ fn ensure_engine() -> @fist.FistEngine {
       let dir = ops_data_dir()
       let db_path = dir + "\\mcpconftest-ops.db"
       // 数据目录不存在时先创建（幂等，失败不影响后续打开尝试）
-      @fs.create_dir(dir) catch { _ => () }
+      @fs.create_dir(dir) catch {
+        _ => ()
+      }
       let e = match @fist.FistEngine::open_sqlite(db_path) {
         Some(x) => x
         None => @fist.FistEngine::new()
@@ -55,13 +59,13 @@ fn ensure_engine() -> @fist.FistEngine {
   }
 }
 
-///
+///|
 /// 重置引擎（ops_init 强制重开 / 测试隔离用）。
 fn reset_engine() -> Unit {
   holder.engine = None
 }
 
-///
+///|
 /// 当前 UTC 时间戳（YYYY-MM-DDTHH:MM:SSZ），供 publish/verify 等 now~ 参数使用。
 fn now_utc() -> String {
   let ms = @env.now().reinterpret_as_int64()
@@ -74,7 +78,8 @@ fn now_utc() -> String {
   "\{y}-\{fist_pad2(m)}-\{fist_pad2(d)}T\{fist_pad2(hour)}:\{fist_pad2(min)}:\{fist_pad2(sec)}Z"
 }
 
-fn fist_pad2(n : Int) -> String {
+///|
+fn fist_pad2(n : Int32) -> String {
   let s = n.to_string()
   if s.length() == 1 {
     "0" + s
@@ -83,7 +88,8 @@ fn fist_pad2(n : Int) -> String {
   }
 }
 
-fn fist_civil_from_days(z : Int) -> (Int, Int, Int) {
+///|
+fn fist_civil_from_days(z : Int32) -> (Int32, Int32, Int32) {
   let z0 = z + 719468
   let era = z0 / 146097
   let doe = z0 - era * 146097
@@ -96,7 +102,7 @@ fn fist_civil_from_days(z : Int) -> (Int, Int, Int) {
   (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
-///
+///|
 /// 工具参数读取：字符串字段。
 fn arg_str(args : Json, key : String, default : String) -> String {
   match args {
@@ -109,7 +115,7 @@ fn arg_str(args : Json, key : String, default : String) -> String {
   }
 }
 
-///
+///|
 /// 工具参数读取：可空字符串字段（None 表示未传）。
 fn arg_str_opt(args : Json, key : String) -> String? {
   match args {
@@ -122,7 +128,7 @@ fn arg_str_opt(args : Json, key : String) -> String? {
   }
 }
 
-///
+///|
 /// 工具参数读取：布尔字段。
 fn arg_bool(args : Json, key : String, default : Bool) -> Bool {
   match args {
@@ -136,19 +142,21 @@ fn arg_bool(args : Json, key : String, default : Bool) -> Bool {
   }
 }
 
-///
+///|
 /// 构造成功 JSON 文本结果。
-fn ok_text(m : Map[String, Json]) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+fn ok_text(
+  m : Map[String, Json],
+) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   Ok(@mcp.ToolResult::text(Json::object(m).stringify()))
 }
 
-///
+///|
 /// 构造失败文本结果。
 fn err_text(msg : String) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   Ok(@mcp.ToolResult::text(Json::string("ERROR: " + msg).stringify()))
 }
 
-///
+///|
 /// 任务列表转 JSON 数组（精简字段）。
 fn tasks_json(tasks : Array[@fist.Task]) -> Json {
   let arr = tasks.map(fn(t) {
@@ -163,7 +171,7 @@ fn tasks_json(tasks : Array[@fist.Task]) -> Json {
   Json::array(arr)
 }
 
-///
+///|
 /// 初始化 FIST 引擎（SQLite 优先，内存回退）。参数：data_dir（可选，覆盖默认数据目录）。
 fn tool_ops_init(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let data_dir_opt = arg_str_opt(args, "data_dir")
@@ -172,7 +180,9 @@ fn tool_ops_init(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       // 显式数据目录：重置并注入环境变量语义（通过局部覆盖）
       reset_engine()
       let db_path = d + "\\mcpconftest-ops.db"
-      @fs.create_dir(d) catch { _ => () }
+      @fs.create_dir(d) catch {
+        _ => ()
+      }
       let e = match @fist.FistEngine::open_sqlite(db_path) {
         Some(x) => x
         None => @fist.FistEngine::new()
@@ -195,7 +205,7 @@ fn tool_ops_init(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   }
 }
 
-///
+///|
 /// 发布根任务（一次巡检批次）。参数：project_dir / description / created_by / ns（可选）。
 fn tool_run_batch(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
@@ -206,13 +216,7 @@ fn tool_run_batch(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   if project_dir.is_empty() || description.is_empty() {
     return err_text("run_batch requires project_dir and description")
   }
-  match e.publish(
-    project_dir~,
-    description~,
-    created_by~,
-    now=now_utc(),
-    ns~,
-  ) {
+  match e.publish(project_dir~, description~, created_by~, now=now_utc(), ns~) {
     Ok(id) => {
       let m : Map[String, Json] = Map([])
       m.set("ok", Json::boolean(true))
@@ -224,7 +228,7 @@ fn tool_run_batch(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   }
 }
 
-///
+///|
 /// 验收任务。参数：task_id / verifier / docs_check（可选）。
 fn tool_verify(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
@@ -233,7 +237,13 @@ fn tool_verify(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   if task_id.is_empty() {
     return err_text("verify requires task_id")
   }
-  match e.verify(task_id~, verifier~, now=now_utc(), docs_check=arg_bool(args, "docs_check", false)) {
+  match
+    e.verify(
+      task_id~,
+      verifier~,
+      now=now_utc(),
+      docs_check=arg_bool(args, "docs_check", false),
+    ) {
     Ok(t) => {
       let m : Map[String, Json] = Map([])
       m.set("ok", Json::boolean(true))
@@ -245,7 +255,7 @@ fn tool_verify(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   }
 }
 
-///
+///|
 /// 熔断状态查询/操作。参数：circuit / action(status|fail|succeed) / ns（可选）。
 fn tool_circuit(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
@@ -257,22 +267,22 @@ fn tool_circuit(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let action = arg_str(args, "action", "status")
   let now_secs = (@env.now().reinterpret_as_int64() / 1000L).to_int()
   let json = if action == "fail" {
-    e.circuit_fail(ns~, circuit~, now_secs=now_secs)
+    e.circuit_fail(ns~, circuit~, now_secs~)
   } else if action == "succeed" {
-    e.circuit_succeed(ns~, circuit~, now_secs=now_secs)
+    e.circuit_succeed(ns~, circuit~, now_secs~)
   } else {
-    e.circuit_status(ns~, circuit~, now_secs=now_secs)
+    e.circuit_status(ns~, circuit~, now_secs~)
   }
   Ok(@mcp.ToolResult::text(json.stringify()))
 }
 
-///
+///|
 /// 生成巡检任务报告。参数：ns（可选，默认 default）。
 fn tool_report(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
   let ns = arg_str(args, "ns", "default")
   let tasks = e.list_in_ns(ns)
-  let counts : Map[String, Int] = Map([])
+  let counts : Map[String, Int32] = Map([])
   for t in tasks {
     let st = t.get_status().to_string()
     let cur = match counts.get(st) {
@@ -294,28 +304,30 @@ fn tool_report(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   ok_text(m)
 }
 
-///
+///|
 /// 审查任务。参数：task_id（可选；不传则按 status 过滤或全量）。
 fn tool_review(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
   match arg_str_opt(args, "task_id") {
-    Some(tid) => {
+    Some(tid) =>
       match e.get_task(tid) {
         Some(t) => {
           let m : Map[String, Json] = Map([])
           m.set("ok", Json::boolean(true))
-          m.set("task", Json::object({
-            "id": Json::string(t.get_id()),
-            "status": Json::string(t.get_status().to_string()),
-            "description": Json::string(t.get_description()),
-            "depth": Json::number(t.get_depth().to_double()),
-            "updated_at": Json::string(t.get_updated_at()),
-          }))
+          m.set(
+            "task",
+            Json::object({
+              "id": Json::string(t.get_id()),
+              "status": Json::string(t.get_status().to_string()),
+              "description": Json::string(t.get_description()),
+              "depth": Json::number(t.get_depth().to_double()),
+              "updated_at": Json::string(t.get_updated_at()),
+            }),
+          )
           ok_text(m)
         }
         None => err_text("task not found: " + tid)
       }
-    }
     None => {
       let status = arg_str(args, "status", "")
       let tasks = if status.is_empty() {
@@ -323,9 +335,7 @@ fn tool_review(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       } else {
         match @fist.TaskStatus::from_string(status) {
           Some(st) => e.list_by_status(st)
-          None => {
-            return err_text("unknown status: " + status)
-          }
+          None => return err_text("unknown status: " + status)
         }
       }
       let m : Map[String, Json] = Map([])
@@ -337,7 +347,7 @@ fn tool_review(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   }
 }
 
-///
+///|
 /// 看护检查：引擎后端 + 心跳 + 熔断快照。参数：circuit（可选，同时查熔断）。
 fn tool_watchdog(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let e = ensure_engine()
@@ -349,14 +359,14 @@ fn tool_watchdog(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
     Some(c) => {
       let ns = arg_str(args, "ns", "default")
       let now_secs = (@env.now().reinterpret_as_int64() / 1000L).to_int()
-      m.set("circuit", e.circuit_status(ns~, circuit=c, now_secs=now_secs))
+      m.set("circuit", e.circuit_status(ns~, circuit=c, now_secs~))
     }
     None => ()
   }
   ok_text(m)
 }
 
-///
+///|
 /// 注册 mcpcf.* 内部工具到现有 server（链式调用，返回扩展后的 server）。
 pub fn with_mcpcf_tools(s : @mcp.MCPServer) -> @mcp.MCPServer {
   let s1 = s.tool(
@@ -393,7 +403,9 @@ pub fn with_mcpcf_tools(s : @mcp.MCPServer) -> @mcp.MCPServer {
         }),
         "created_by": Json::object({
           "type": Json::string("string"),
-          "description": Json::string("Creator role; must be human_steward or human"),
+          "description": Json::string(
+            "Creator role; must be human_steward or human",
+          ),
         }),
         "ns": Json::object({
           "type": Json::string("string"),
@@ -481,7 +493,9 @@ pub fn with_mcpcf_tools(s : @mcp.MCPServer) -> @mcp.MCPServer {
         }),
         "status": Json::object({
           "type": Json::string("string"),
-          "description": Json::string("Filter by status, e.g. 待领取/执行中/已完成"),
+          "description": Json::string(
+            "Filter by status, e.g. 待领取/执行中/已完成",
+          ),
         }),
       }),
     }),

@@ -1,7 +1,8 @@
 ///| JS-target implementations of the report filesystem primitives.
-///| Native counterpart lives in `report_fs_native.mbt`.
 
-extern "js" fn fs_mkdir_p(dir : String) -> Int =
+///|
+/// Native counterpart lives in `report_fs_native.mbt`.
+extern "js" fn fs_mkdir_p(dir : String) -> Int32 =
   #| (dir) => {
   #|   try {
   #|     const fs = process.getBuiltinModule('node:fs')
@@ -12,7 +13,8 @@ extern "js" fn fs_mkdir_p(dir : String) -> Int =
   #|   }
   #| }
 
-extern "js" fn fs_write_file(path : String, content : String) -> Int =
+///|
+extern "js" fn fs_write_file(path : String, content : String) -> Int32 =
   #| (path, content) => {
   #|   try {
   #|     const fs = process.getBuiltinModule('node:fs')
