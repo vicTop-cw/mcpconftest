@@ -11,6 +11,11 @@ fi
 if [ -z "$VERSION" ]; then echo "无法从 moon.mod 解析版本，请用 MCP_VERSION" >&2; exit 1; fi
 echo "=== mcpconftest release zip v$VERSION ==="
 
+# 0. 发布前置：IRON LAWS 门禁（R1-R6 一键自检，未通过拒绝发布）
+echo "[gate] verify-iron-laws.ps1 ..."
+pwsh -File "$REPO_ROOT/scripts/verify-iron-laws.ps1"
+echo "[ok] IRON LAWS 门禁通过"
+
 echo "[build] moon build --target js --release ..."
 moon build --target js --release
 

@@ -24,6 +24,17 @@ if ($Version -eq "") {
 
 Write-Host "=== mcpconftest release zip v$Version ===" -ForegroundColor Cyan
 
+# 0. 发布前置：IRON LAWS 门禁（R1-R6 一键自检，未通过拒绝发布）
+Write-Host "[gate] verify-iron-laws.ps1 ..." -ForegroundColor Yellow
+$prevErr = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+$gateOut = (& pwsh -File (Join-Path $REPO_ROOT "scripts\verify-iron-laws.ps1") 2>&1 | Out-String)
+$GateExit = $LASTEXITCODE
+$ErrorActionPreference = $prevErr
+$gateOut -split "`r?`n" | Where-Object { $_ -ne "" } | Select-Object -Last 8 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+if ($GateExit -ne 0) { Write-Host "[x] IRON LAWS 门禁未通过 (exit $GateExit)，拒绝发布" -ForegroundColor Red; exit 1 }
+Write-Host "[ok] IRON LAWS 门禁通过" -ForegroundColor Green
+
 # 1. moon build js release
 # PS 5.1 下 2>&1 会把 native stderr 转成 NativeCommandError 且与顶层 EAP=Stop 打架，
 # 直接丢弃 stderr、以退出码为准（失败时重跑一次显示错误尾部）。

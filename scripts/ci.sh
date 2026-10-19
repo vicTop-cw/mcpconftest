@@ -16,3 +16,9 @@ done
 
 echo "== e2e fixture =="
 moon run cmd/e2e 2>&1 | grep -E "^\[fixture\]|^E2E:"
+
+echo "== fixture snapshot diff (R5) =="
+TMP_R="$(mktemp -d)"
+moon run cmd -- run --fixture --report "$TMP_R" 2>/dev/null || true
+pwsh -File scripts/verify-fixture.ps1 -ReportJson "$TMP_R/report.json" -ExpectedJson scripts/fixture-expected.json
+rm -rf "$TMP_R"

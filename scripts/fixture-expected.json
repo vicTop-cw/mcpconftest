@@ -1,0 +1,7 @@
+{
+  "server": "node tests/fixtures/mcp_fixture_server.js",
+  "protocol_version": "2026-07-28",
+  "verdict": "fail",
+  "summary": { "pass": 38, "fail": 15, "skip": 5, "warn": 0 },
+  "total": 58
+}

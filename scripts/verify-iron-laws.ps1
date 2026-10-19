@@ -71,7 +71,10 @@ if ($SkipFingerprint) {
   if (Test-Path $reportDir) { Remove-Item $reportDir -Recurse -Force }
   try {
     Push-Location $RepoRoot
+    $prevErr = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     moon run cmd -- run --fixture --report $reportDir 2>&1 | Out-Null
+    $ErrorActionPreference = $prevErr
     Pop-Location
     $jsonPath = Join-Path $reportDir 'report.json'
     $hasFp = $false
@@ -88,6 +91,43 @@ if ($SkipFingerprint) {
     Write-Step 'L4 R2/R6 指纹与 verdict 预检 (fixture)' $false "执行失败: $($_.Exception.Message)"
   }
 }
+
+# ---- L5. R3 实现<->规格双向闭合（verify-specs.ps1） ----
+$specExit = -1
+$specErr = ''
+try {
+  Push-Location $RepoRoot
+  & (Join-Path $RepoRoot 'scripts\verify-specs.ps1') 2>&1 | Out-Null
+  $specExit = $LASTEXITCODE
+  Pop-Location
+} catch {
+  $specErr = $_.Exception.Message
+  Pop-Location
+}
+$r3Ok = $specExit -eq 0
+Write-Step 'L5 R3 实现<->规格双向闭合' $r3Ok ($(if ($r3Ok) { 'verify-specs PASS' } elseif ($specErr) { $specErr } else { "verify-specs exit=$specExit" }))
+
+# ---- L6. R5 fixture 快照 diff（verify-fixture.ps1） ----
+$fxExit = -1
+$fxErr = ''
+$fxDir = Join-Path $env:TEMP ("mcpconftest-fixture-" + [guid]::NewGuid().ToString('N'))
+try {
+  Push-Location $RepoRoot
+  $prevErr = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  moon run cmd -- run --fixture --report $fxDir 2>&1 | Out-Null
+  $ErrorActionPreference = $prevErr
+  Pop-Location
+  $repJson = Join-Path $fxDir 'report.json'
+  & (Join-Path $RepoRoot 'scripts\verify-fixture.ps1') -ReportJson $repJson -ExpectedJson (Join-Path $RepoRoot 'scripts\fixture-expected.json') 2>&1 | Out-Null
+  $fxExit = $LASTEXITCODE
+} catch {
+  $fxErr = $_.Exception.Message
+  Pop-Location
+}
+if (Test-Path $fxDir) { Remove-Item $fxDir -Recurse -Force }
+$r5Ok = $fxExit -eq 0
+Write-Step 'L6 R5 fixture 快照 diff' $r5Ok ($(if ($r5Ok) { 'fixture 与快照一致' } elseif ($fxErr) { $fxErr } else { "verify-fixture exit=$fxExit" }))
 
 # ---- 汇总 ----
 $failed = @($Results | Where-Object { -not $_.Ok })

@@ -52,10 +52,14 @@ jobs:
           node-version: 20
       - name: Build js backend (for list-checks)
         run: moon build --target js
-      - name: L1 - spec is source of truth (specs vs list-checks)
+      - name: R3 - spec<->impl bidirectional closure
         run: pwsh -File scripts/verify-specs.ps1
-      - name: L3 - corpus coverage
+      - name: R4 - corpus coverage
         run: pwsh -File scripts/verify-corpus.ps1
+      - name: R5 - fixture snapshot diff
+        run: |
+          moon run cmd -- run --fixture --report ./fixture-report || true
+          pwsh -File scripts/verify-fixture.ps1 -ReportJson ./fixture-report/report.json -ExpectedJson scripts/fixture-expected.json
 
   release-build:
     runs-on: ubuntu-latest
