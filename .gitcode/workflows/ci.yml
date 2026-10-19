@@ -42,6 +42,22 @@ jobs:
           name: mcpconftest-report
           path: mcpconftest-report/
 
+  iron-laws:
+    runs-on: windows-latest
+    needs: [check, unit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: moonbitlang/setup-moonbit@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build js backend (for list-checks)
+        run: moon build --target js
+      - name: L1 - spec is source of truth (specs vs list-checks)
+        run: pwsh -File scripts/verify-specs.ps1
+      - name: L3 - corpus coverage
+        run: pwsh -File scripts/verify-corpus.ps1
+
   release-build:
     runs-on: ubuntu-latest
     needs: [check, unit]
