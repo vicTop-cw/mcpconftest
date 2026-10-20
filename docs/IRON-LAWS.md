@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 9f2a11add43fbf12a546606fb2b962ab_c2408e5dcbde11f1898e525400248c00
+    ReservedCode1: fuZ6XvPtmKng3w8GULuvQc55CJ2d2P5g/NsuY1060ijyEjoBj9rPpksO32reqcbT/xE0h8RMbQydhIKRmw8GFOT494Gst2lYDX820dGTdOwnwuUYl8R97yH2KaK7iq1WnmKIV1tw5gnRKY5H7ZPmPR872eBBK5yYCY4jr4dnYRHMp7hqPw4sMYgeXfI=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 9f2a11add43fbf12a546606fb2b962ab_c2408e5dcbde11f1898e525400248c00
+    ReservedCode2: fuZ6XvPtmKng3w8GULuvQc55CJ2d2P5g/NsuY1060ijyEjoBj9rPpksO32reqcbT/xE0h8RMbQydhIKRmw8GFOT494Gst2lYDX820dGTdOwnwuUYl8R97yH2KaK7iq1WnmKIV1tw5gnRKY5H7ZPmPR872eBBK5yYCY4jr4dnYRHMp7hqPw4sMYgeXfI=
+---
+
 # mcpconftest 自研铁律（IRON LAWS）
 
 > 版本：v1.0
@@ -121,3 +132,4 @@ pwsh ./scripts/verify-iron-laws.ps1
 
 - 铁律变更本身必须走评审：修改本文需同时更新 `scripts/verify-iron-laws.ps1` 与发布门禁，任何一条铁律不可在无自检命令的情况下存在。
 - 本文 v1.0 对应实施计划 v1.0（2026-10-19 用户批准）。
+*（内容由AI生成，仅供参考）*
