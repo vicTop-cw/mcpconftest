@@ -18,5 +18,5 @@ import {
   "moonbitlang/async@0.22.3",
   "colmugx/mcp@0.17.4",
   "moonbitlang/x@0.5.5",
-  "vicTop-cw/fist-mbt@0.3.6",
+  "mizchi/sqlite@0.3.1",
 }

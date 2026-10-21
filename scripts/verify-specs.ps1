@@ -61,7 +61,8 @@ Write-Host "[L1] OK: all $($manifest.Count) spec entries covered by list-checks"
 # 与 specs/**/spec.json（manifest.json 为索引）双向对应。
 # 命名体系：实现用 "场景.检查名"（init.jsonrpc），规格用 "mcp.类别.检查名"（mcp.core.initialize）。
 # 对应关系按 主题前缀 -> 规格类别 人工复核映射（下方 $ThemeToCategory，2026-10-19 复核）。
-# mcpcf.* 为 FIST-Mbt 库级嵌入层（internal），豁免入规格树（IRON-LAWS.md R3 声明）。
+# mcpcf.* 为自实现 OpsEngine（src/lib/ops_*.mbt，路线 A 已移除 fist-mbt 包依赖）内部工具，
+# 非协议检查项，豁免入规格树（IRON-LAWS.md R3 豁免声明）；下方对 'mcpcf' 前缀按 internal 计数。
 $srcFiles = @('src\lib\checks.mbt', 'src\lib\fist_ops.mbt')
 $ThemeToCategory = @{
   'init' = 'core'; 'caps' = 'core';

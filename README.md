@@ -112,10 +112,23 @@ mcpconftest serve                                         # MCP server 形态（
 
 `mcpconftest serve` 以无状态 MCP server（2026-07-28 协议）暴露三个原生工具：
 `version` / `run_probe`（参数：servers、report_dir、junit）/ `list_checks`；
-并内嵌 FIST-Mbt 作为内部工具库，额外注册 `mcpcf.*` 七工具
+并内嵌**自实现 OpsEngine**（src/lib/ops_*.mbt，语义对齐 FIST-Mbt 0.3.6 缓存，
+不依赖外部 fist-mbt 包）作为内部工具库，额外注册 `mcpcf.*` 七工具
 （`ops_init` / `run_batch` / `verify` / `watchdog` / `report` / `circuit` / `review`），
 实现"规约驱动巡检 + 自驱运维"一体化。任何支持 stdio MCP 的客户端可直接拉起
 `mcpconftest serve`。
+
+### 自实现 OpsEngine（路线 A）
+
+- 模块：`ops_task.mbt`（Task / TaskStatus 九态 + 状态机）、`ops_store.mbt`
+  （OpsMemoryStore / OpsSqliteStore 双后端，SQLite 全部参数化绑定）、
+  `ops_engine.mbt`（OpsEngine：publish / verify / circuit / review 等操作）、
+  `fist_ops.mbt`（mcpcf.* 七工具接线与数据目录隔离）。
+- 数据文件 `mcpconftest-ops.db`，默认 `%LOCALAPPDATA%\mcpconftest\data`，
+  `MCPCONFTEST_DATA_DIR` 可覆盖，schema 与 fist-mbt 0.3.6 逐字一致
+  （可读旧库；SQLite 打开失败回退内存后端，`backend` 报 `memory://`）。
+- 七工具对外签名与数据语义与旧嵌入层完全一致；mcpcf.* 为内部工具，
+  不入规格树（IRON-LAWS R3 豁免，见 scripts/verify-specs.ps1）。
 
 ## 可验证规约层（sigmaLang 风格）
 
@@ -233,7 +246,10 @@ src/lib/
   session_io_js.mbt   — JS 后端 stdio 抽象实现（inline extern）
   session_io_native.mbt — native 后端实现（spawn 子进程真实 stdio + async/websocket 真实 WS）
   specs.mbt       — 规格驱动装配（list_checks_spec，优先规格回退静态）
-  fist_ops.mbt    — FIST-Mbt 库级嵌入（mcpcf.* 七工具 + 数据目录隔离）
+  ops_task.mbt    — 自实现 OpsEngine：Task / TaskStatus 九态 + 状态机（对齐 fist-mbt 0.3.6）
+  ops_store.mbt   — 自实现 OpsEngine：OpsMemoryStore / OpsSqliteStore 双后端（SQL 参数化）
+  ops_engine.mbt  — 自实现 OpsEngine：OpsEngine（publish/verify/circuit/review/now 语义）
+  fist_ops.mbt    — 自实现引擎接线：mcpcf.* 七工具 + 数据目录隔离（不依赖外部 fist-mbt 包）
   checks.mbt      — 28 conformance check categories
   report.mbt      — JSON / Markdown / HTML / JUnit rendering
   probe.mbt       — probe orchestration (fixture + target + parallel)

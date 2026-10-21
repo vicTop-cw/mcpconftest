@@ -1,13 +1,15 @@
 ///
-/// FIST-Mbt 库级嵌入层：serve 模式下暴露 mcpcf.* 内部工具。
-/// 七工具：ops_init / run_batch / verify / watchdog / report / circuit / review。
+/// mcpconftest 自实现 FIST 兼容引擎的 MCP 嵌入层（路线 A 重写版）。
+/// serve 模式下暴露 mcpcf.* 内部工具，七工具：ops_init / run_batch /
+/// verify / watchdog / report / circuit / review。
 /// 数据隔离：默认 %LOCALAPPDATA%\mcpconftest\data\mcpconftest-ops.db，
 /// 可用环境变量 MCPCONFTEST_DATA_DIR 覆盖（见 docs/fist-data-isolation.md）。
+/// 实现引擎见 ops_engine.mbt / ops_store.mbt / ops_task.mbt（不再依赖 fist-mbt）。
 
 ///|
 /// 引擎持有者：内部可变性模式（MoonBit 顶层仅允许 let，可变状态放入 struct mut 字段）。
 priv struct EngineHolder {
-  mut engine : @fist.FistEngine?
+  mut engine : OpsEngine?
 }
 
 ///|
@@ -15,31 +17,37 @@ priv struct EngineHolder {
 let holder : EngineHolder = { engine: None, }
 
 ///|
-fn set_engine(e : @fist.FistEngine) -> Unit {
+fn set_engine(e : OpsEngine) -> Unit {
   holder.engine = Some(e)
 }
 
 ///|
-fn get_engine() -> @fist.FistEngine? {
+fn get_engine() -> OpsEngine? {
   holder.engine
 }
 
 ///|
-/// 解析运行时数据目录：优先 MCPCONFTEST_DATA_DIR，其次 LOCALAPPDATA，最后 cwd。
+/// 解析运行时数据目录：优先 MCPCONFTEST_DATA_DIR；
+/// 其次 Windows 取 LOCALAPPDATA，Linux/macOS 取 XDG_DATA_HOME（无则 ~/.local/share）；
+/// 最后回退 cwd 下 ./mcpconftest-data。
 fn ops_data_dir() -> String {
   match @env.get_env_var("MCPCONFTEST_DATA_DIR") {
     Some(d) => d
     None =>
       match @env.get_env_var("LOCALAPPDATA") {
         Some(base) => base + "\\mcpconftest\\data"
-        None => "./mcpconftest-data"
+        None =>
+          match @env.get_env_var("XDG_DATA_HOME") {
+            Some(x) => x + "/mcpconftest"
+            None => "./mcpconftest-data"
+          }
       }
   }
 }
 
 ///|
 /// 确保引擎已初始化：优先 SQLite（mcpconftest-ops.db），失败回退内存版。
-fn ensure_engine() -> @fist.FistEngine {
+fn ensure_engine() -> OpsEngine {
   match get_engine() {
     Some(e) => e
     None => {
@@ -49,9 +57,9 @@ fn ensure_engine() -> @fist.FistEngine {
       @fs.create_dir(dir) catch {
         _ => ()
       }
-      let e = match @fist.FistEngine::open_sqlite(db_path) {
+      let e = match OpsEngine::open_sqlite(db_path) {
         Some(x) => x
-        None => @fist.FistEngine::new()
+        None => OpsEngine::new()
       }
       set_engine(e)
       e
@@ -158,7 +166,7 @@ fn err_text(msg : String) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
 
 ///|
 /// 任务列表转 JSON 数组（精简字段）。
-fn tasks_json(tasks : Array[@fist.Task]) -> Json {
+fn tasks_json(tasks : Array[Task]) -> Json {
   let arr = tasks.map(fn(t) {
     let m : Map[String, Json] = Map([])
     m.set("id", Json::string(t.get_id()))
@@ -172,26 +180,30 @@ fn tasks_json(tasks : Array[@fist.Task]) -> Json {
 }
 
 ///|
-/// 初始化 FIST 引擎（SQLite 优先，内存回退）。参数：data_dir（可选，覆盖默认数据目录）。
+/// 初始化 FIST 兼容引擎（SQLite 优先，内存回退）。参数：data_dir（可选，覆盖默认数据目录）。
 fn tool_ops_init(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
   let data_dir_opt = arg_str_opt(args, "data_dir")
   match data_dir_opt {
     Some(d) => {
-      // 显式数据目录：重置并注入环境变量语义（通过局部覆盖）
+      // 显式数据目录：重置并打开该目录下的 mcpconftest-ops.db
       reset_engine()
       let db_path = d + "\\mcpconftest-ops.db"
       @fs.create_dir(d) catch {
         _ => ()
       }
-      let e = match @fist.FistEngine::open_sqlite(db_path) {
+      let e = match OpsEngine::open_sqlite(db_path) {
         Some(x) => x
-        None => @fist.FistEngine::new()
+        None => OpsEngine::new()
       }
       set_engine(e)
       let m : Map[String, Json] = Map([])
       m.set("ok", Json::boolean(true))
       m.set("backend", Json::string(e.heartbeat_backend()))
-      m.set("db", Json::string(db_path))
+      let db_field = match e.heartbeat_backend() {
+        "sqlite" => db_path
+        _ => "memory://"
+      }
+      m.set("db", Json::string(db_field))
       ok_text(m)
     }
     None => {
@@ -199,7 +211,11 @@ fn tool_ops_init(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       let m : Map[String, Json] = Map([])
       m.set("ok", Json::boolean(true))
       m.set("backend", Json::string(e.heartbeat_backend()))
-      m.set("db", Json::string(ops_data_dir() + "\\mcpconftest-ops.db"))
+      let db_field = match e.heartbeat_backend() {
+        "sqlite" => ops_data_dir() + "\\mcpconftest-ops.db"
+        _ => "memory://"
+      }
+      m.set("db", Json::string(db_field))
       ok_text(m)
     }
   }
@@ -333,7 +349,7 @@ fn tool_review(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       let tasks = if status.is_empty() {
         e.list_all()
       } else {
-        match @fist.TaskStatus::from_string(status) {
+        match TaskStatus::from_string(status) {
           Some(st) => e.list_by_status(st)
           None => return err_text("unknown status: " + status)
         }

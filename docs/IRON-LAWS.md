@@ -59,6 +59,7 @@ AIGC:
 
 **判定规则**：
 - 静态扫描 `src/lib/checks.mbt`、`src/lib/fist_ops.mbt` 中形如 `mcp.*` / `mcpcf.*` 的 check_id 字面量，逐一验证 specs 目录下存在对应 spec.json。
+- 豁免：`mcpcf.*` 为**自实现 OpsEngine（src/lib/ops_*.mbt，不依赖外部 fist-mbt 包）**的内部工具 id（ops_init/run_batch/verify/circuit/report/review/watchdog），非协议检查项，不入规格树；`scripts/verify-specs.ps1` 对 `mcpcf` 前缀按 internal 计数并跳过正向验证。
 - 反向校验 specs 全部 spec.json 的 check_id 均有代码引用；无法静态命中的动态拼接项列入人工复核清单。
 - 任一缺失项 = 校验红。
 

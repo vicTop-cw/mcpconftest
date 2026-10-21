@@ -10,6 +10,16 @@
 
 ///|
 
+///| Then mounts the seven internal `mcpcf.*` tools via `with_mcpcf_tools`
+
+///| (ops_init / run_batch / verify / circuit / report / review / watchdog),
+
+///| backed by the self-implemented OpsEngine (src/lib/ops_*.mbt, aligned with
+
+///| fist-mbt 0.3.6 semantics, no external fist-mbt dependency).
+
+///|
+
 ///| The returned `@mcp.MCPServer` is driven by the target-specific stdio
 
 ///| loop in `cmd/serve_io_js.mbt` / `cmd/serve_io_native.mbt`.
