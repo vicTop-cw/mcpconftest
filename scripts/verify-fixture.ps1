@@ -40,6 +40,17 @@ if ($sum.skip -ne $exp.summary.skip) { $issues.Add("skip $($sum.skip) != $($exp.
 if ($sum.warn -ne $exp.summary.warn) { $issues.Add("warn $($sum.warn) != $($exp.summary.warn)") }
 if ($total -ne $exp.total) { $issues.Add("total $total != $($exp.total)") }
 
+# R1 铁律补充：所有 skip 项必须带 skip_reason（SKIP_WITH_REASON），无理由 skip 判 inconclusive
+$noReasonSkips = @()
+foreach ($r in $rep.results) {
+  if ($r.severity -eq 'skip' -and [string]::IsNullOrEmpty($r.skip_reason)) {
+    $noReasonSkips += $r.name
+  }
+}
+if ($noReasonSkips.Count -gt 0) {
+  $issues.Add("R1: $($noReasonSkips.Count) skip 项无 skip_reason（违反 SKIP_WITH_REASON）: $($noReasonSkips -join ', ')")
+}
+
 if ($issues.Count -eq 0) {
   Write-Host "[R5] OK: fixture 与快照一致 (verdict=$($rep.verdict) $($sum.pass)p/$($sum.fail)f/$($sum.skip)s/$($sum.warn)w)"
   exit 0

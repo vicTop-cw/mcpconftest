@@ -125,7 +125,8 @@ fn spec_fingerprint_of(e : SpecEntry) -> String {
 
 ///| the result with SHA-256. Returns "" when the spec tree is unavailable
 
-///| (e.g. running from a release bundle without the repo tree).
+///|
+/// (e.g. running from a release bundle without the repo tree).
 pub fn specs_fingerprint() -> String {
   let entries = load_specs()
   if entries.length() == 0 {
@@ -145,7 +146,9 @@ pub fn specs_fingerprint() -> String {
   if !found {
     return ""
   }
-  let hex = @crypto.bytes_to_hex_string(@crypto.sha256(@utf8.encode(buf.to_string())))
+  let hex = @crypto.bytes_to_hex_string(
+    @crypto.sha256(@utf8.encode(buf.to_string())),
+  )
   "sha256:\{hex}"
 }
 

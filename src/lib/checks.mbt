@@ -552,20 +552,20 @@ pub async fn check_resources_list(session : Session) -> Array[CheckResult] {
               }
             _ =>
               results.push(
-                CheckResult::skip(
-                  "resources_list.result", "resources array missing (server may not support resources)",
-                ),
+                CheckResult::skip_with_reason(
+  "resources_list.result", "resources array missing (server may not support resources)", "resources array missing (server may not support resources)",
+),
               )
           }
         _ =>
           results.push(
-            CheckResult::skip(
-              "resources_list.unsupported", "no result (server may not support resources)",
-            ),
+            CheckResult::skip_with_reason(
+  "resources_list.unsupported", "no result (server may not support resources)", "no result (server may not support resources)",
+),
           )
       }
     }
-    Err(e) => results.push(CheckResult::skip("resources_list.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("resources_list.unreachable", e, e))
   }
   results
 }
@@ -629,20 +629,20 @@ pub async fn check_prompts_list(session : Session) -> Array[CheckResult] {
               }
             _ =>
               results.push(
-                CheckResult::skip(
-                  "prompts_list.result", "prompts array missing (server may not support prompts)",
-                ),
+                CheckResult::skip_with_reason(
+  "prompts_list.result", "prompts array missing (server may not support prompts)", "prompts array missing (server may not support prompts)",
+),
               )
           }
         _ =>
           results.push(
-            CheckResult::skip(
-              "prompts_list.unsupported", "no result (server may not support prompts)",
-            ),
+            CheckResult::skip_with_reason(
+  "prompts_list.unsupported", "no result (server may not support prompts)", "no result (server may not support prompts)",
+),
           )
       }
     }
-    Err(e) => results.push(CheckResult::skip("prompts_list.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("prompts_list.unreachable", e, e))
   }
   results
 }
@@ -704,7 +704,7 @@ pub async fn check_resources_read_error(
           )
       }
     }
-    Err(e) => results.push(CheckResult::skip("resources_read.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("resources_read.unreachable", e, e))
   }
   results
 }
@@ -754,9 +754,9 @@ pub async fn check_ping(session : Session) -> Array[CheckResult] {
                 Some(Json::Number(-32601, ..)) =>
                   if stateless_server {
                     results.push(
-                      CheckResult::skip(
-                        "ping.removed", "ping removed in 2026-07-28; server correctly rejects with -32601 (liveness covered by keepalive RPC)",
-                      ),
+                      CheckResult::skip_with_reason(
+  "ping.removed", "ping removed in 2026-07-28; server correctly rejects with -32601 (liveness covered by keepalive RPC)", "ping removed in 2026-07-28; server correctly rejects with -32601 (liveness covered by keepalive RPC)",
+),
                     )
                   } else {
                     results.push(
@@ -1081,9 +1081,9 @@ pub async fn check_logging(session : Session) -> Array[CheckResult] {
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "logging.unsupported", "server does not support logging",
-                      ),
+                      CheckResult::skip_with_reason(
+  "logging.unsupported", "server does not support logging", "server does not support logging",
+),
                     )
                   Some(_) =>
                     results.push(
@@ -1109,7 +1109,7 @@ pub async fn check_logging(session : Session) -> Array[CheckResult] {
         }
       }
     }
-    Err(e) => results.push(CheckResult::skip("logging.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("logging.unreachable", e, e))
   }
   results
 }
@@ -1178,9 +1178,9 @@ pub async fn check_completion(session : Session) -> Array[CheckResult] {
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "completion.unsupported", "server does not support completion",
-                      ),
+                      CheckResult::skip_with_reason(
+  "completion.unsupported", "server does not support completion", "server does not support completion",
+),
                     )
                   Some(_) =>
                     results.push(
@@ -1206,7 +1206,7 @@ pub async fn check_completion(session : Session) -> Array[CheckResult] {
         }
       }
     }
-    Err(e) => results.push(CheckResult::skip("completion.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("completion.unreachable", e, e))
   }
   results
 }
@@ -1239,9 +1239,9 @@ pub async fn check_subscribe(session : Session) -> Array[CheckResult] {
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "subscribe.unsupported", "server does not support subscribe",
-                      ),
+                      CheckResult::skip_with_reason(
+  "subscribe.unsupported", "server does not support subscribe", "server does not support subscribe",
+),
                     )
                   Some(_) =>
                     results.push(
@@ -1267,7 +1267,7 @@ pub async fn check_subscribe(session : Session) -> Array[CheckResult] {
         }
       }
     }
-    Err(e) => results.push(CheckResult::skip("subscribe.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("subscribe.unreachable", e, e))
   }
   results
 }
@@ -1337,9 +1337,9 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "sampling.unsupported", "server does not support sampling",
-                      ),
+                      CheckResult::skip_with_reason(
+  "sampling.unsupported", "server does not support sampling", "server does not support sampling",
+),
                     )
                   Some(_) =>
                     results.push(
@@ -1365,7 +1365,7 @@ pub async fn check_sampling(session : Session) -> Array[CheckResult] {
         }
       }
     }
-    Err(e) => results.push(CheckResult::skip("sampling.unreachable", e))
+    Err(e) => results.push(CheckResult::skip_with_reason("sampling.unreachable", e, e))
   }
   results
 }
@@ -1714,9 +1714,9 @@ pub async fn check_batch(session : Session) -> Array[CheckResult] {
         }
         if batch_rejected {
           results.push(
-            CheckResult::skip(
-              "batch.removed", "JSON-RPC batch removed in 2026-07-28; server rejects batch array (compliant)",
-            ),
+            CheckResult::skip_with_reason(
+  "batch.removed", "JSON-RPC batch removed in 2026-07-28; server rejects batch array (compliant)", "JSON-RPC batch removed in 2026-07-28; server rejects batch array (compliant)",
+),
           )
         } else {
           validate_batch_resp(j, req_ids, err_req_ids, results)
@@ -2223,9 +2223,9 @@ pub async fn check_stateless_missing_capability(
                 }
               Some(Json::Number(-32601, ..)) =>
                 results.push(
-                  CheckResult::skip(
-                    "missing_capability.unknown_tool", "dummy tool unknown; cannot observe capability check",
-                  ),
+                  CheckResult::skip_with_reason(
+  "missing_capability.unknown_tool", "dummy tool unknown; cannot observe capability check", "dummy tool unknown; cannot observe capability check",
+),
                 )
               Some(_) =>
                 results.push(
@@ -2676,9 +2676,9 @@ pub async fn check_stateless_mrtr(session : Session) -> Array[CheckResult] {
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "mrtr.unknown_tool", "dummy tool unknown; cannot observe MRTR flow",
-                      ),
+                      CheckResult::skip_with_reason(
+  "mrtr.unknown_tool", "dummy tool unknown; cannot observe MRTR flow", "dummy tool unknown; cannot observe MRTR flow",
+),
                     )
                   Some(_) =>
                     results.push(
@@ -2793,9 +2793,9 @@ pub async fn check_stateless_deprecations(
                 match e.get("code") {
                   Some(Json::Number(-32601, ..)) =>
                     results.push(
-                      CheckResult::skip(
-                        "deprecations.no_discover", "server/discover unavailable; cannot inspect capability deprecations",
-                      ),
+                      CheckResult::skip_with_reason(
+  "deprecations.no_discover", "server/discover unavailable; cannot inspect capability deprecations", "server/discover unavailable; cannot inspect capability deprecations",
+),
                     )
                   Some(_) =>
                     results.push(

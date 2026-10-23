@@ -100,7 +100,7 @@ Based on MCP protocol spec `2026-07-28` and JSON-RPC 2.0.
 
 ---
 
-## Implementation Status (v0.6)
+## Implementation Status (v0.9.0)
 
 | Category | Status |
 |----------|--------|

@@ -127,7 +127,7 @@ AIGC:
 pwsh ./scripts/verify-iron-laws.ps1
 ```
 
-阶段 0 的 verify-iron-laws.ps1 骨架覆盖：本文件存在性与六条铁律完整性、每条铁律的自检命令可解析、specs 规格树存在、R2 指纹预检（报告含 spec_fingerprint）。阶段 1-3 逐步充实为全量门禁（R3/R4/R5 接入）。
+verify-iron-laws.ps1 全量门禁已接通（2026-10-23 打磨）：L0 文档存在性、L1 六条铁律完整、L2 每条铁律含自检命令、L3 specs 规格树存在、L4 R2/R6 指纹与 verdict 预检（fixture 实跑）、L5 R3 实现↔规格双向闭合（verify-specs.ps1）、L6 R5 fixture 快照 diff（verify-fixture.ps1，含 R1 skip_reason 非空检查）。R4 三重门禁由 scripts/ci.sh 承担（双端 moon check/test + R5 fixture diff + verify-specs）。
 
 ## 版本与维护
 

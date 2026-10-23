@@ -1,7 +1,7 @@
 # verify-iron-laws.ps1 — mcpconftest 自研铁律一键自检
 # IRON LAW: R1-R6 (docs/IRON-LAWS.md)
-# 阶段 0 骨架：文档存在性与六条铁律完整性 + 自检命令可解析 + 规格树存在 + R2 指纹预检。
-# 阶段 1-3 逐步充实：R1 三态类型检查、R2 指纹实算、R3 双向闭合、R4 三重门禁、R5 fixture 快照 diff。
+# 全量门禁已接通：L0-L6 覆盖文档完整性 + R2 指纹实算 + R3 双向闭合 + R5 fixture 快照 diff（含 R1 skip_reason 检查）。
+# R4 三重门禁（双端测试+指纹diff+语料覆盖率）由 scripts/ci.sh 承担，本脚本 L5/L6 为其子集。
 # 用法: pwsh ./scripts/verify-iron-laws.ps1 [-SkipFingerprint] [-Verbose]
 # 退出码: 0 = 全部通过; 1 = 任一铁律自检失败。
 

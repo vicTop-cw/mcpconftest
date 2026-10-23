@@ -97,7 +97,7 @@ Exit code: `0` (ALL GREEN) — fixture is *expected* to have failures; the probe
 
 ```bash
 # CLI 四子命令（安装后直接 `mcpconftest`；开发态等价 `moon run cmd --`）
-mcpconftest version        # mcpconftest v0.8.0
+mcpconftest version        # mcpconftest v0.9.0
 mcpconftest list-checks    # 列出全部检查类别
 mcpconftest run --server "node my-mcp-server.js"          # 探测指定 MCP server（stdio）
 mcpconftest run --server "mcp-server-A" --server "mcp-server-B"   # 多 server 并行
@@ -166,7 +166,7 @@ Every run writes to the report directory:
 - `report.html` — standalone styled page (collapsible details)
 - `report-junit.xml` — JUnit XML, only with `--junit` (CI-native)
 
-## Check categories (v0.8.0, spec-driven)
+## Check categories (v0.9.0, spec-driven)
 
 28 类检查项由 `specs/` 单一真源驱动（运行时装配 + sha256 指纹）。
 
