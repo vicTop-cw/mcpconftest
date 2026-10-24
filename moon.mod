@@ -16,7 +16,7 @@ preferred_target = "js"
 
 import {
   "moonbitlang/async@0.22.3",
-  "colmugx/mcp@0.17.4",
+  "colmugx/mcp@0.18.1",
   "moonbitlang/x@0.5.5",
-  "mizchi/sqlite@0.3.1",
+  "daqing/sqlite@0.4.0",
 }

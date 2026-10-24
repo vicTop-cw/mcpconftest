@@ -38,7 +38,7 @@ pub fn list_checks_meta() -> Json {
 
 ///|
 /// Build the MCP server with the run_probe / list_checks / version tools.
-pub fn build_mcp_server() -> @mcp.MCPServer {
+pub fn build_mcp_server() -> @mcp.MCPServer raise @mcp_types.MCPError {
   let s0 = @mcp.MCPServer::MCPServer("mcpconftest", version())
   let s1 = s0.tool(
     "run_probe",
@@ -65,7 +65,10 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
         }),
       }),
     }),
-    async fn(args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+    fn(
+      _ctx : @mcp.RequestContext,
+      args : Json,
+    ) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       let servers = parse_servers(args)
       if servers.length() == 0 {
         return Err(
@@ -105,7 +108,10 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
       "type": Json::string("object"),
       "properties": Json::object({}),
     }),
-    fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+    fn(
+      _ctx : @mcp.RequestContext,
+      _args : Json,
+    ) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(list_checks_meta().stringify()))
     },
   )
@@ -116,7 +122,10 @@ pub fn build_mcp_server() -> @mcp.MCPServer {
       "type": Json::string("object"),
       "properties": Json::object({}),
     }),
-    fn(_args : Json) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
+    fn(
+      _ctx : @mcp.RequestContext,
+      _args : Json,
+    ) -> Result[@mcp.ToolResult, @mcp_types.MCPError] {
       Ok(@mcp.ToolResult::text(Json::string(version()).stringify()))
     },
   )

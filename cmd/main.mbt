@@ -85,7 +85,9 @@ async fn main {
   } else if subcmd == "list-checks" {
     list_checks()
   } else if subcmd == "serve" {
-    let s = @lib.build_mcp_server()
+    let s = @lib.build_mcp_server() catch {
+      _ => panic()
+    }
     run_stdio_target(s)
   } else if subcmd == "run" {
     let servers : Array[String] = []

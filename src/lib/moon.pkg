@@ -12,7 +12,7 @@ import {
   "moonbitlang/x/crypto",
   "colmugx/mcp",
   "colmugx/mcp/protocol/types" @mcp_types,
-  "mizchi/sqlite" @sqlite,
+  "daqing/sqlite" @sqlite,
 }
 
 supported_targets = "js+native"
